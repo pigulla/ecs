@@ -33,13 +33,6 @@ module.exports = {
     },
     plugins: ['@typescript-eslint', 'react', 'unicorn', 'import', 'prettier'],
     rules: {
-        'max-len': [
-            'error',
-            {
-                code: 100,
-                ignoreTemplateLiterals: true,
-            },
-        ],
         'no-param-reassign': ['error'],
         'no-shadow': 'off',
         'no-unused-vars': 'off',
@@ -81,6 +74,7 @@ module.exports = {
         'unicorn/no-null': 'off',
         'unicorn/no-array-reduce': 'off',
         'unicorn/prefer-object-from-entries': 'off',
+        'unicorn/prevent-abbreviations': 'off',
     },
     overrides: [
         {

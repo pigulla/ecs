@@ -1,27 +1,16 @@
 import React from 'react'
 
-import logo from './logo.svg'
 import './App.css'
+import { Canvas } from './component'
+import type { IWorld } from './ecs'
+import { getDimensions } from './ecs/system/render'
 
-function App(): JSX.Element {
+export function App(props: { world: IWorld }): JSX.Element {
+    const dimensions = getDimensions(props.world, { cellSizePx: 50, gridOffsetPx: 50 })
+
     return (
         <div className="App">
-            <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                <p>
-                    Edit <code>src/App.tsx</code> and save to reload.
-                </p>
-                <a
-                    className="App-link"
-                    href="https://reactjs.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Learn React
-                </a>
-            </header>
+            <Canvas dimensions={dimensions} />
         </div>
     )
 }
-
-export default App
