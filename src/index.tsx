@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-non-null-assertion,@typescript-eslint/no-unused-vars,@typescript-eslint/ban-ts-comment,max-len */
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
 import './index.css'
 import App from './App'
-import { World } from './ecs/world'
+import { Component, World } from './ecs/world'
 
 const world = new World()
 const root = ReactDOM.createRoot(document.querySelector('#root')!)
@@ -15,27 +16,67 @@ root.render(
     </React.StrictMode>,
 )
 
-// @ts-expect-error
-window.world = world
+class HP extends Component {
+    public maximum: number
+    public current: number
 
-// console.dir(world.createComponent('foo', { n: 'one' }))
-// console.dir(world.createComponent('foo', { n: 'two' }))
-//
-// console.dir(world.getComponent('foo', 0))
-// console.dir(world.getComponent('foo', 1))
+    public constructor(data: { maximum: number; current: number }) {
+        super()
 
-interface HP {
-    maximum: number
-    current: number
+        this.maximum = data.maximum
+        this.current = data.current
+    }
 }
 
-const player = world.createEntity('player')
-const HP = world.registerComponentType('hp')
-world.addComponent<HP>(player, HP, {
-    maximum: 30,
-    current: 25,
+class Position extends Component {
+    public x: number
+    public y: number
+
+    public constructor(data: { x: number; y: number }) {
+        super()
+
+        this.x = data.x
+        this.y = data.y
+    }
+}
+
+const player = world.createEntity({ name: 'player' })
+const room = world.createEntity({ name: 'room' })
+const walls = [
+    world.createEntity({ name: 'wall 1', parent: room }),
+    world.createEntity({ name: 'wall 2', parent: room }),
+    world.createEntity({ name: 'wall 3', parent: room }),
+    world.createEntity({ name: 'wall 4', parent: room }),
+]
+
+world.registerComponentTypes(HP, Position)
+world.addComponent(
+    player,
+    new HP({
+        maximum: 30,
+        current: 25,
+    }),
+)
+world.addComponent(
+    player,
+    new Position({
+        x: 42,
+        y: 17,
+    }),
+)
+
+console.log({
+    hp: world.getComponent(player, HP),
+    position: world.getComponent(player, Position),
 })
 
-const result = world.getComponent<HP>(player, HP)
+world.removeComponent(player, Position)
+console.log({
+    hp: world.getComponent(player, HP),
+    position: world.getComponent(player, Position),
+})
 
-console.dir(result)
+// @ts-expect-error
+window.world = world
+// @ts-expect-error
+window.component = { HP, Position }
