@@ -1,10 +1,7 @@
 import { World } from './ecs'
-import { Location, Obstruction, OrthogonalLine, Terrain, Visual } from './ecs/component'
 import { createWallsFromPoints, createDoor, createWindow, createSand } from './ecs/entity'
 
 const world = new World({ columns: 25, rows: 15 })
-
-world.registerComponentTypes(Location, Obstruction, OrthogonalLine, Terrain, Visual)
 
 const room = world.createEntity({ name: 'Room' })
 createWallsFromPoints(

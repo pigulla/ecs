@@ -8,13 +8,17 @@ import { COLUMN, ROW } from './geometry'
 import { hasLineOf } from './system'
 import type { IWorld } from './world.interface'
 
+const ECS_PROPERTIES = '--ecs-properties'
+
 type ComponentName = Opaque<string, 'component-name'>
+
+type StyleSheetWithComponentMap = CSSStyleSheet & {
+    [ECS_PROPERTIES]: Map<Entity, Component>
+}
 
 const ENTITY_REF = Symbol('entity-reference')
 
 export class World implements IWorld {
-    private static readonly PROPERTIES = '--ecs-properties'
-
     public readonly columns: number
     public readonly rows: number
 
@@ -140,83 +144,51 @@ export class World implements IWorld {
         }
     }
 
-    private getStyleSheetFor(Class: ComponentName | Class<Component>): CSSStyleSheet {
-        const maybeStyleSheet = this.findStyleSheetFor(Class)
-
-        if (maybeStyleSheet === null) {
-            throw new Error(`No style sheet found`)
-        }
-
-        return maybeStyleSheet
-    }
-
-    private findStyleSheetFor(Class: ComponentName | Class<Component>): CSSStyleSheet | null {
+    private getStyleSheetFor(Class: ComponentName | Class<Component>): StyleSheetWithComponentMap {
         const type = typeof Class === 'string' ? Class : (Class.name as ComponentName)
         const styleSheets = [...document.styleSheets] as CSSStyleSheet[]
-        return styleSheets.find((sheet: CSSStyleSheet) => sheet.title === type) ?? null
+
+        const styleSheet: (CSSStyleSheet & { [ECS_PROPERTIES]?: Map<Entity, Component> }) | null =
+            styleSheets.find((sheet: CSSStyleSheet) => sheet.title === type) ?? null
+
+        if (styleSheet === null) {
+            const element = document.createElement('style')
+            element.title = type
+            document.querySelector('head')!.append(element)
+            return this.getStyleSheetFor(Class)
+        }
+
+        if (!styleSheet[ECS_PROPERTIES]) {
+            styleSheet[ECS_PROPERTIES] = new Map()
+        }
+
+        return styleSheet as StyleSheetWithComponentMap
     }
 
     public addComponent<T extends Component>(entity: Entity, component: T): void {
         const Class = component.constructor as Class<Component>
-        const stylesheet = this.getStyleSheetFor(Class)
-        const index = stylesheet.insertRule(`._${entity.id} {}`)
-        const rule = stylesheet.cssRules[index] as CSSStyleRule
+        this.getStyleSheetFor(Class)[ECS_PROPERTIES].set(entity, component)
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        rule.style[World.PROPERTIES] = component
         entity.element.classList.add(component.constructor.name)
     }
 
     public getComponents(entity: Entity): Component[] {
-        const styleSheets = [...document.styleSheets] as CSSStyleSheet[]
-        const selectorText = `._${entity.id}`
+        const styleSheets = [...document.styleSheets] as (CSSStyleSheet & {
+            [ECS_PROPERTIES]?: Map<Entity, Component>
+        })[]
 
-        return (
-            styleSheets
-                .flatMap(styleSheet => [...styleSheet.cssRules] as CSSStyleRule[])
-                .filter(rule => rule.selectorText === selectorText)
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                .map(rule => rule.style[World.PROPERTIES] as Component)
-        )
-    }
-
-    public findComponent<T extends Component>(entity: Entity, Class: Class<T>): T | null {
-        const stylesheet = this.getStyleSheetFor(Class)
-        const rules = [...stylesheet.cssRules] as CSSStyleRule[]
-
-        const maybeRule = rules.find(rule => rule.selectorText === `._${entity.id}`)
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        return maybeRule ? (maybeRule.style[World.PROPERTIES] as T) : null
+        return styleSheets
+            .map(styleSheet => styleSheet[ECS_PROPERTIES]?.get(entity))
+            .filter((maybeComponent): maybeComponent is Component => maybeComponent !== undefined)
     }
 
     public getComponent<T extends Component>(entity: Entity, Class: Class<T>): T {
-        const maybeComponent = this.findComponent(entity, Class)
+        const maybeComponent = this.getStyleSheetFor(Class)[ECS_PROPERTIES].get(entity)
 
         if (!maybeComponent) {
             throw new Error('Component not found')
         }
 
-        return maybeComponent
-    }
-
-    public registerComponentTypes(...Classes: Class<Component>[]): void {
-        for (const Class of Classes) {
-            this.registerComponentType(Class)
-        }
-    }
-
-    public registerComponentType(Class: Class<Component>): void {
-        if (this.findStyleSheetFor(Class)) {
-            throw new Error(`Component already registered`)
-        }
-
-        const element = document.createElement('style')
-        element.title = Class.name as ComponentName
-        document.querySelector('head')!.append(element)
+        return maybeComponent as T
     }
 }

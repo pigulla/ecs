@@ -27,10 +27,6 @@ export class Entity {
         return this.world.getComponent(this, Class)
     }
 
-    public findComponent<T extends Component>(Class: Class<T>): T | null {
-        return this.world.findComponent(this, Class)
-    }
-
     public addComponent<T extends Component>(component: T): this {
         this.world.addComponent(this, component)
         return this

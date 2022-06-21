@@ -14,12 +14,9 @@ export interface IWorld {
     ): readonly [Readonly<Coordinate>, number][]
     addComponent<T extends Component>(entity: Entity, component: T): void
     createEntity(data?: { name?: string; parent?: Entity }): Entity
-    findComponent<T extends Component>(entity: Entity, Class: Class<T>): T | null
     findEntities(Classes: Iterable<Class<Component>>): Entity[]
     getComponent<T extends Component>(entity: Entity, Class: Class<T>): T
     getComponents(entity: Entity): Component[]
-    registerComponentType(Class: Class<Component>): void
-    registerComponentTypes(...Classes: Class<Component>[]): void
     removeComponent<T extends Component>(entity: Entity, component: T | Class<T>): void
     removeEntity(entity: Entity): void
 }
