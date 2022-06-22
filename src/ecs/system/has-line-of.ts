@@ -16,7 +16,7 @@ export function hasLineOf(
     ]
 
     return world
-        .findEntities([Obstruction, OrthogonalLine])
+        .findEntities([Obstruction, OrthogonalLine], [])
         .filter(entity => entity.getComponent(Obstruction).blocksAny(blockedBy))
         .map(entity => entity.getComponent(OrthogonalLine))
         .every(line => !intersects(los, [line.from, line.to]))

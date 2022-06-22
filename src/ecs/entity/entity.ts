@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { Class } from 'type-fest'
 
-import type { Component } from '../component'
+import type { Component, Tag } from '../component'
 import type { IWorld } from '../world.interface'
 
 export class Entity {
-    public readonly element: HTMLElement
+    public readonly element: HTMLDivElement
     public readonly id: number
     public readonly name: string
 
     private readonly world: IWorld
 
-    public constructor(world: IWorld, element: HTMLElement) {
+    public constructor(world: IWorld, element: HTMLDivElement) {
         this.world = world
         this.element = element
 
@@ -21,6 +21,11 @@ export class Entity {
 
     public get components(): readonly Component[] {
         return this.world.getComponents(this)
+    }
+
+    public addTag(tag: Tag): this {
+        this.world.addTag(this, tag)
+        return this
     }
 
     public getComponent<T extends Component>(Class: Class<T>): T {

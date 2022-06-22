@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-non-null-assertion */
-import type { Class, Opaque } from 'type-fest'
+import type { Class, SetRequired } from 'type-fest'
 
-import { Component, ObstructionType } from './component'
+import type { ComponentType, Tag } from './component'
+import { Component, isComponentType, ObstructionType } from './component'
 import { Entity } from './entity'
 import type { Coordinate } from './geometry'
 import { COLUMN, ROW } from './geometry'
@@ -10,29 +11,34 @@ import type { IWorld } from './world.interface'
 
 const ECS_PROPERTIES = '--ecs-properties'
 
-type ComponentName = Opaque<string, 'component-name'>
-
-type StyleSheetWithComponentMap = CSSStyleSheet & {
-    [ECS_PROPERTIES]: Map<Entity, Component>
-}
+type EcsStyleSheetUninitialized = CSSStyleSheet &
+    Element & {
+        [ECS_PROPERTIES]?: Map<Entity, Component>
+    }
+type EcsStyleSheet = SetRequired<EcsStyleSheetUninitialized, typeof ECS_PROPERTIES>
 
 const ENTITY_REF = Symbol('entity-reference')
+
+type ElementWithEntityRef = HTMLDivElement & { [ENTITY_REF]: Entity }
 
 export class World implements IWorld {
     public readonly columns: number
     public readonly rows: number
 
+    private readonly document: Document
     private readonly entities: Element
     private readonly neighborsForMovement: [Coordinate, number][][][]
     private nextEntityId: number
 
-    public constructor(data: { rows: number; columns: number }) {
+    public constructor(document: Document, data: { rows: number; columns: number }) {
         this.columns = data.columns
         this.rows = data.rows
+
+        this.document = document
         this.entities = document.createElement('div')
         this.nextEntityId = 1
 
-        document.querySelector('body')!.append(this.entities)
+        this.document.querySelector('body')!.append(this.entities)
         this.entities.setAttribute('style', 'display: none')
         this.entities.classList.add('entities')
         this.neighborsForMovement = Array.from({ length: data.columns }).map(() =>
@@ -78,17 +84,19 @@ export class World implements IWorld {
         }
     }
 
-    public findEntities(Classes: Iterable<Class<Component>>): Entity[] {
-        const selector = [...Classes].map((Class: Class<Component>) => `.${Class.name}`).join('')
+    public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[] {
+        const selectors: string[] = [
+            [...Classes].map((Class: Class<Component>) => `.${Component.typeOf(Class)}`).join(''),
+            [...tags].map(tag => `.${tag}`).join(''),
+        ]
 
-        return [...this.entities.querySelectorAll(selector)].map(
-            // @ts-expect-error
-            element => element[ENTITY_REF] as Entity,
+        return [...this.entities.querySelectorAll<ElementWithEntityRef>(selectors.join(''))].map(
+            element => element[ENTITY_REF],
         )
     }
 
     public createEntity({ name, parent }: { name?: string; parent?: Entity } = {}): Entity {
-        const element = document.createElement('div')
+        const element = this.document.createElement('div') as ElementWithEntityRef
         const id = this.nextEntityId++
 
         element.id = id.toString(10)
@@ -101,7 +109,6 @@ export class World implements IWorld {
         }
 
         const entity = new Entity(this, element)
-        // @ts-expect-error
         element[ENTITY_REF] = entity
 
         return entity
@@ -113,8 +120,11 @@ export class World implements IWorld {
             this.removeEntity(entity.element.firstChild[ENTITY_REF] as Entity)
         }
 
-        for (const name of entity.element.classList) {
-            const type = name as ComponentName
+        const componentTypes = [...entity.element.classList].filter(
+            (element): element is ComponentType => isComponentType(element),
+        )
+
+        for (const type of componentTypes) {
             const styleSheets = this.getStyleSheetFor(type)
             const index = ([...styleSheets.cssRules] as CSSStyleRule[]).findIndex(
                 rule => rule.selectorText === `._${entity.id}`,
@@ -137,24 +147,27 @@ export class World implements IWorld {
             rule => rule.selectorText === `._${entity.id}`,
         )
 
-        entity.element.classList.remove(Class.name)
+        entity.element.classList.remove(Component.typeOf(component))
 
         if (index !== -1) {
             this.getStyleSheetFor(Class).deleteRule(index)
         }
     }
 
-    private getStyleSheetFor(Class: ComponentName | Class<Component>): StyleSheetWithComponentMap {
-        const type = typeof Class === 'string' ? Class : (Class.name as ComponentName)
-        const styleSheets = [...document.styleSheets] as CSSStyleSheet[]
-
-        const styleSheet: (CSSStyleSheet & { [ECS_PROPERTIES]?: Map<Entity, Component> }) | null =
-            styleSheets.find((sheet: CSSStyleSheet) => sheet.title === type) ?? null
+    private getStyleSheetFor<T extends Component>(
+        Class: ComponentType | T | Class<T>,
+    ): EcsStyleSheet {
+        const type = Component.typeOf(Class)
+        // The 'style' prefix is obviously overly specific, it's just for documentary purposes
+        const styleSheet = this.document.querySelector<EcsStyleSheetUninitialized>(
+            `style#${type}[ecs]`,
+        )
 
         if (styleSheet === null) {
-            const element = document.createElement('style')
-            element.title = type
-            document.querySelector('head')!.append(element)
+            const element = this.document.createElement('style')
+            element.id = type
+            element.setAttribute('ecs', '')
+            this.document.querySelector('head')!.append(element)
             return this.getStyleSheetFor(Class)
         }
 
@@ -162,23 +175,25 @@ export class World implements IWorld {
             styleSheet[ECS_PROPERTIES] = new Map()
         }
 
-        return styleSheet as StyleSheetWithComponentMap
+        return styleSheet as EcsStyleSheet
+    }
+
+    public addTag(entity: Entity, tag: Tag): void {
+        entity.element.classList.add(tag)
     }
 
     public addComponent<T extends Component>(entity: Entity, component: T): void {
-        const Class = component.constructor as Class<Component>
-        this.getStyleSheetFor(Class)[ECS_PROPERTIES].set(entity, component)
+        const type = Component.typeOf(component)
+        this.getStyleSheetFor(component)[ECS_PROPERTIES].set(entity, component)
 
-        entity.element.classList.add(component.constructor.name)
+        entity.element.classList.add(type)
     }
 
     public getComponents(entity: Entity): Component[] {
-        const styleSheets = [...document.styleSheets] as (CSSStyleSheet & {
-            [ECS_PROPERTIES]?: Map<Entity, Component>
-        })[]
+        const styleSheets = this.document.querySelectorAll<EcsStyleSheet>('head > style[ecs]')
 
-        return styleSheets
-            .map(styleSheet => styleSheet[ECS_PROPERTIES]?.get(entity))
+        return [...styleSheets]
+            .map(styleSheet => styleSheet[ECS_PROPERTIES].get(entity))
             .filter((maybeComponent): maybeComponent is Component => maybeComponent !== undefined)
     }
 

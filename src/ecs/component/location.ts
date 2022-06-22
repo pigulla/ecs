@@ -1,18 +1,21 @@
 import type { Coordinate } from '../geometry'
-import { isSameCoordinate } from '../geometry'
 
 import { Component } from './component'
+import type { Tag } from './tag'
+import { createTag } from './tag'
+
+export function coordinateTag(coordinate: Readonly<Coordinate>): Tag {
+    return createTag(`location-${coordinate.join('_')}`)
+}
 
 export class Location extends Component {
-    public coordinates: Readonly<Coordinate>
+    public readonly coordinates: Readonly<Coordinate>
+    public readonly tag: Tag
 
     public constructor(data: { coordinates: Coordinate }) {
         super()
 
         this.coordinates = [...data.coordinates]
-    }
-
-    public equals(other: Location): boolean {
-        return isSameCoordinate(this.coordinates, other.coordinates)
+        this.tag = coordinateTag(this.coordinates)
     }
 }

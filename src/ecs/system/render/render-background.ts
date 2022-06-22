@@ -86,7 +86,7 @@ function renderTerrain(
     { world, gridOffsetPx, cellSizePx }: Dimensions,
     ctx: CanvasRenderingContext2D,
 ): void {
-    const terrains = world.findEntities([Location, Terrain, Visual])
+    const terrains = world.findEntities([Location, Terrain, Visual], [])
 
     for (const terrain of terrains) {
         const location = terrain.getComponent(Location)
@@ -106,7 +106,7 @@ function renderObstructions(
     { world, gridOffsetPx, cellSizePx }: Dimensions,
     ctx: CanvasRenderingContext2D,
 ): void {
-    const obstacles = world.findEntities([Obstruction, OrthogonalLine, Visual])
+    const obstacles = world.findEntities([Obstruction, OrthogonalLine, Visual], [])
 
     for (const obstacle of obstacles) {
         const line = obstacle.getComponent(OrthogonalLine)

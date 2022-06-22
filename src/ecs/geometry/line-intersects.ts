@@ -19,6 +19,7 @@ function distanceToSegmentSquared(
     w: Readonly<Point>,
 ): number {
     const l2 = distance(v, w)
+
     if (l2 === 0) {
         return distance(p, v)
     }
