@@ -19,6 +19,7 @@ export function createWallsFromPoints(
                 obstructs: [ObstructionType.MOVEMENT, ObstructionType.SIGHT],
             }),
         )
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         wall.addComponent(new OrthogonalLine({ from: points[index - 1]!, to: points[index]! }))
         wall.addComponent(new Visual({ strokeStyle: 'rgba(0,0,0,1.0)', lineWidth: 3 }))
 
