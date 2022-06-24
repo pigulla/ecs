@@ -3,7 +3,7 @@ import type { Class, SetRequired } from 'type-fest'
 
 import type { ComponentType, Tag } from './component'
 import { Component, isComponentType, ObstructionType } from './component'
-import { Entity } from './entity'
+import type { Entity } from './entity'
 import {
     ComponentAddedEvent,
     ComponentRemovedEvent,
@@ -46,17 +46,14 @@ export class World implements IWorld {
 
         this.entities = this.root.attachShadow({ mode: 'closed' })
         this.nextEntityId = 1
+    }
 
-        this.onEntityCreated(({ entity }) => console.info(`${entity.name}#${entity.id} created`))
-        this.onEntityDeleted(({ entity }) => console.info(`${entity.name}#${entity.id} deleted`))
-        this.onComponentAdded(({ component, entity }) =>
-            console.info(`${component.getType()} component added to ${entity.name}#${entity.id}`),
-        )
-        this.onComponentRemoved(({ component, entity }) =>
-            console.info(
-                `${component.getType()} component removed from ${entity.name}#${entity.name}`,
-            ),
-        )
+    public onTagAdded(callback: (event: TagAddedEvent) => void): void {
+        this.root.addEventListener(TagAddedEvent.NAME, callback as EventListener)
+    }
+
+    public onTagRemoved(callback: (event: TagRemovedEvent) => void): void {
+        this.root.addEventListener(TagRemovedEvent.NAME, callback as EventListener)
     }
 
     public onEntityCreated(callback: (event: EntityCreatedEvent) => void): void {
@@ -121,20 +118,27 @@ export class World implements IWorld {
         )
     }
 
-    public createEntity({ name, parent }: { name?: string; parent?: Entity } = {}): Entity {
-        const element = this.document.createElement('div') as ElementWithEntityRef
-        const id = this.nextEntityId++
+    private entityElement(entity: Entity): ElementWithEntityRef {
+        return this.entities.querySelector(`#${entity}`)!
+    }
 
-        element.id = `📂${id.toString(10)}`
-        element.title = name ?? element.id
+    public createEntity({ name, parent }: { name?: string; parent?: Entity } = {}): Entity {
+        // TODO: Check that the name is allowed in a CSS class
+
+        const element = this.document.createElement('div') as ElementWithEntityRef
+        const entity = `📂${(this.nextEntityId++).toString(10)}${name ? `-${name}` : ''}` as Entity
+
+        element.id = entity
+        if (name) {
+            element.title = name
+        }
 
         if (parent) {
-            parent.element.append(element)
+            this.entityElement(parent).append(element)
         } else {
             this.entities.append(element)
         }
 
-        const entity = new Entity(this, id, element)
         element[ENTITY_REF] = entity
         this.root.dispatchEvent(new EntityCreatedEvent(entity))
 
@@ -142,20 +146,20 @@ export class World implements IWorld {
     }
 
     public removeEntity(entity: Entity): void {
-        while (entity.element.childElementCount > 0) {
-            // @ts-expect-error
-            this.removeEntity(entity.element.firstChild[ENTITY_REF] as Entity)
+        const element = this.entityElement(entity)
+        while (element.childElementCount > 0) {
+            this.removeEntity((element.firstChild as ElementWithEntityRef)[ENTITY_REF])
         }
 
-        const componentTypes = [...entity.element.classList].filter(
-            (element): element is ComponentType => isComponentType(element),
+        const componentTypes = [...element.classList].filter((element): element is ComponentType =>
+            isComponentType(element),
         )
 
         for (const type of componentTypes) {
             this.removeComponent(entity, type)
         }
 
-        entity.element.remove()
+        element.remove()
         this.root.dispatchEvent(new EntityDeletedEvent(entity))
     }
 
@@ -172,9 +176,9 @@ export class World implements IWorld {
         }
 
         const ruleIndex = ([...stylesheet.cssRules] as CSSStyleRule[]).findIndex(
-            rule => rule.selectorText === `._${entity.id}`,
+            rule => rule.selectorText === `._${entity}`,
         )
-        entity.element.classList.remove(Component.typeOf(component))
+        this.entityElement(entity).classList.remove(Component.typeOf(component))
         this.root.dispatchEvent(new ComponentRemovedEvent(current, entity))
         if (ruleIndex !== -1) {
             stylesheet.deleteRule(ruleIndex)
@@ -208,19 +212,20 @@ export class World implements IWorld {
     }
 
     public addTag(entity: Entity, tag: Tag): void {
-        const classes = entity.element.classList
+        const element = this.entityElement(entity)
+        const classes = element.classList
 
         if (!classes.contains(tag)) {
-            entity.element.classList.add(tag)
+            element.classList.add(tag)
             this.root.dispatchEvent(new TagAddedEvent(tag, entity))
         }
     }
 
     public removeTag(entity: Entity, tag: Tag): void {
-        const classes = entity.element.classList
+        const classes = this.entityElement(entity).classList
 
         if (classes.contains(tag)) {
-            entity.element.classList.remove(tag)
+            classes.remove(tag)
             this.root.dispatchEvent(new TagRemovedEvent(tag, entity))
         }
     }
@@ -238,7 +243,7 @@ export class World implements IWorld {
             componentMap.delete(entity)
             this.root.dispatchEvent(new ComponentRemovedEvent(previous, entity))
         } else {
-            entity.element.classList.add(type)
+            this.entityElement(entity).classList.add(type)
         }
 
         componentMap.set(entity, component)

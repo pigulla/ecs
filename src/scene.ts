@@ -1,6 +1,6 @@
 import { World } from './ecs'
 import { createTag } from './ecs/component'
-import { createWallsFromPoints, createDoor, createWindow, createSand } from './ecs/entity'
+import { createWallsFromPoints, createDoor, createWindow, createSand } from './ecs/entity/index'
 
 const world = new World(
     document,
@@ -12,7 +12,7 @@ const world = new World(
 const ROOM = createTag('room')
 const room = world.createEntity({ name: 'Room' })
 
-room.addTag(ROOM)
+world.addTag(room, ROOM)
 
 createWallsFromPoints(
     world,

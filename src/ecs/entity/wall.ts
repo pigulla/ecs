@@ -1,30 +1,31 @@
 import { Obstruction, ObstructionType, OrthogonalLine, Visual } from '../component'
+import type { Entity } from '../entity'
 import type { Coordinate } from '../geometry'
 import type { IWorld } from '../world.interface'
-
-import type { Entity } from './entity'
 
 export function createWallsFromPoints(
     world: IWorld,
     points: [Coordinate, ...Coordinate[]],
     parent?: Entity,
-): Entity[] {
-    const walls: Entity[] = []
+): Entity {
+    const wall = world.createEntity({ name: 'walls', parent })
 
     for (let index = 1; index < points.length; index++) {
-        const wall = world.createEntity({ parent })
+        const segment = world.createEntity({ name: 'wall', parent: wall })
 
-        wall.addComponent(
+        world.addComponent(
+            segment,
             new Obstruction({
                 obstructs: [ObstructionType.MOVEMENT, ObstructionType.SIGHT],
             }),
         )
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        wall.addComponent(new OrthogonalLine({ from: points[index - 1]!, to: points[index]! }))
-        wall.addComponent(new Visual({ strokeStyle: 'rgba(0,0,0,1.0)', lineWidth: 3 }))
-
-        walls.push(wall)
+        world.addComponent(
+            segment,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            new OrthogonalLine({ from: points[index - 1]!, to: points[index]! }),
+        )
+        world.addComponent(segment, new Visual({ strokeStyle: 'rgba(0,0,0,1.0)', lineWidth: 3 }))
     }
 
-    return walls
+    return wall
 }

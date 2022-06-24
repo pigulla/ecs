@@ -1,5 +1,4 @@
 export * from './door'
-export * from './entity'
 export * from './sand'
 export * from './wall'
 export * from './window'

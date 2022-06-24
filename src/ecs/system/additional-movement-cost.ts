@@ -7,5 +7,8 @@ export function additionalMovementCost(world: IWorld, coordinate: Readonly<Coord
 
     return world
         .findEntities([Terrain, Location], [tag])
-        .reduce((sum, entity) => sum + entity.getComponent(Terrain).additionalMovementPoints, 0)
+        .reduce(
+            (sum, entity) => sum + world.getComponent(entity, Terrain).additionalMovementPoints,
+            0,
+        )
 }

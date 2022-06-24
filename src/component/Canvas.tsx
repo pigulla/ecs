@@ -87,6 +87,7 @@ export function DebugCanvas(props: DebugCanvasProps): JSX.Element {
             props.dimensions.world,
             props.dimensions,
             ctx,
+            0,
             props.origin,
             props.availableMovement,
         )
