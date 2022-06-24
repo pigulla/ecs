@@ -4,7 +4,6 @@ import { COLUMN, ROW } from '../../geometry'
 import type { IWorld } from '../../world.interface'
 import { additionalMovementCost } from '../additional-movement-cost'
 import { hasLineOf } from '../has-line-of'
-import { shortestPaths } from '../shortest-path'
 
 import type { Dimensions } from './types'
 import { clear, forEachSquare, getDimensions, squareCoordinates } from './util'
@@ -31,12 +30,12 @@ export function renderMovementCosts(
     dimensions: Dimensions,
     ctx: CanvasRenderingContext2D,
     origin: Readonly<Coordinate>,
-    availableMovement: number = Number.POSITIVE_INFINITY,
+    _availableMovement: number = Number.POSITIVE_INFINITY,
 ): void {
     ctx.save()
 
     const { world, cellSizePx, gridOffsetPx } = dimensions
-    const costs = shortestPaths(world, origin, availableMovement)
+    // const costs = shortestPaths(world, origin, availableMovement)
     const fontSize = Math.ceil(cellSizePx / 5)
 
     ctx.font = `${fontSize}px sans-serif`
@@ -45,7 +44,7 @@ export function renderMovementCosts(
 
     forEachSquare(dimensions, ([column, row]) => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const cost = costs[column]![row]
+        // const cost = costs[column]![row]
         const additionalCost = additionalMovementCost(world, [column, row])
 
         if (column === origin[COLUMN] && row === origin[ROW]) {
@@ -61,14 +60,14 @@ export function renderMovementCosts(
             )
         }
 
-        if (cost) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 1.0)'
-            ctx.fillText(
-                `⇢${cost.movementPoints.toString(10)}`,
-                gridOffsetPx + cellSizePx * column + cellSizePx / 2,
-                gridOffsetPx + cellSizePx * (row + 1) - fontSize,
-            )
-        }
+        // if (cost) {
+        //     ctx.fillStyle = 'rgba(0, 0, 0, 1.0)'
+        //     ctx.fillText(
+        //         `⇢${cost.movementPoints.toString(10)}`,
+        //         gridOffsetPx + cellSizePx * column + cellSizePx / 2,
+        //         gridOffsetPx + cellSizePx * (row + 1) - fontSize,
+        //     )
+        // }
     })
 
     ctx.restore()

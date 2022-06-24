@@ -4,6 +4,14 @@ import type { Class, SetRequired } from 'type-fest'
 import type { ComponentType, Tag } from './component'
 import { Component, isComponentType, ObstructionType } from './component'
 import { Entity } from './entity'
+import {
+    ComponentAddedEvent,
+    ComponentRemovedEvent,
+    EntityCreatedEvent,
+    EntityDeletedEvent,
+    TagAddedEvent,
+    TagRemovedEvent,
+} from './event'
 import type { Coordinate } from './geometry'
 import { COLUMN, ROW } from './geometry'
 import { hasLineOf } from './system'
@@ -26,38 +34,54 @@ export class World implements IWorld {
     public readonly rows: number
 
     private readonly document: Document
-    private readonly entities: Element
-    private readonly neighborsForMovement: [Coordinate, number][][][]
+    private readonly root: Element
+    private readonly entities: ShadowRoot
     private nextEntityId: number
 
-    public constructor(document: Document, data: { rows: number; columns: number }) {
+    public constructor(document: Document, root: Element, data: { rows: number; columns: number }) {
         this.columns = data.columns
         this.rows = data.rows
-
         this.document = document
-        this.entities = document.createElement('div')
+        this.root = root
+
+        this.entities = this.root.attachShadow({ mode: 'closed' })
         this.nextEntityId = 1
 
-        this.document.querySelector('body')!.append(this.entities)
-        this.entities.setAttribute('style', 'display: none')
-        this.entities.classList.add('entities')
-        this.neighborsForMovement = Array.from({ length: data.columns }).map(() =>
-            Array.from({ length: data.rows }),
+        this.onEntityCreated(({ entity }) => console.info(`${entity.name}#${entity.id} created`))
+        this.onEntityDeleted(({ entity }) => console.info(`${entity.name}#${entity.id} deleted`))
+        this.onComponentAdded(({ component, entity }) =>
+            console.info(`${component.getType()} component added to ${entity.name}#${entity.id}`),
         )
-
-        this.updateNeighborsForMovement()
+        this.onComponentRemoved(({ component, entity }) =>
+            console.info(
+                `${component.getType()} component removed from ${entity.name}#${entity.name}`,
+            ),
+        )
     }
 
-    public getNeighborsForMovement(
-        coordinate: Readonly<Coordinate>,
-    ): readonly [Readonly<Coordinate>, number][] {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return this.neighborsForMovement[coordinate[COLUMN]]![coordinate[ROW]]!
+    public onEntityCreated(callback: (event: EntityCreatedEvent) => void): void {
+        this.root.addEventListener(EntityCreatedEvent.NAME, callback as EventListener)
     }
 
-    public updateNeighborsForMovement(): void {
+    public onEntityDeleted(callback: (event: EntityDeletedEvent) => void): void {
+        this.root.addEventListener(EntityDeletedEvent.NAME, callback as EventListener)
+    }
+
+    public onComponentAdded(callback: (event: ComponentAddedEvent) => void): void {
+        this.root.addEventListener(ComponentAddedEvent.NAME, callback as EventListener)
+    }
+
+    public onComponentRemoved(callback: (event: ComponentRemovedEvent) => void): void {
+        this.root.addEventListener(ComponentRemovedEvent.NAME, callback as EventListener)
+    }
+
+    public getNeighborsForMovement(): [Coordinate, number][][][] {
         const MOVEMENT_COST_ORTHOGONAL = 2
         const MOVEMENT_COST_DIAGONAL = 3
+
+        const result: [Coordinate, number][][][] = Array.from({ length: this.columns }).map(() =>
+            Array.from({ length: this.rows }),
+        )
 
         for (let column = 0; column < this.columns; column++) {
             for (let row = 0; row < this.rows; row++) {
@@ -72,7 +96,7 @@ export class World implements IWorld {
                     [[column + 1, row + 1], MOVEMENT_COST_DIAGONAL], //   SE
                 ]
 
-                this.neighborsForMovement[column]![row] = candidates.filter(
+                result[column]![row] = candidates.filter(
                     ([neighbor, _cost]) =>
                         neighbor[ROW] >= 0 &&
                         neighbor[ROW] < this.rows &&
@@ -82,6 +106,8 @@ export class World implements IWorld {
                 )
             }
         }
+
+        return result
     }
 
     public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[] {
@@ -99,7 +125,7 @@ export class World implements IWorld {
         const element = this.document.createElement('div') as ElementWithEntityRef
         const id = this.nextEntityId++
 
-        element.id = id.toString(10)
+        element.id = `📂${id.toString(10)}`
         element.title = name ?? element.id
 
         if (parent) {
@@ -108,8 +134,9 @@ export class World implements IWorld {
             this.entities.append(element)
         }
 
-        const entity = new Entity(this, element)
+        const entity = new Entity(this, id, element)
         element[ENTITY_REF] = entity
+        this.root.dispatchEvent(new EntityCreatedEvent(entity))
 
         return entity
     }
@@ -125,33 +152,35 @@ export class World implements IWorld {
         )
 
         for (const type of componentTypes) {
-            const styleSheets = this.getStyleSheetFor(type)
-            const index = ([...styleSheets.cssRules] as CSSStyleRule[]).findIndex(
-                rule => rule.selectorText === `._${entity.id}`,
-            )
-
-            if (index !== -1) {
-                styleSheets.deleteRule(index)
-            }
+            this.removeComponent(entity, type)
         }
 
         entity.element.remove()
+        this.root.dispatchEvent(new EntityDeletedEvent(entity))
     }
 
-    public removeComponent<T extends Component>(entity: Entity, component: T | Class<T>): void {
-        const Class = (
-            component instanceof Component ? component.constructor : component
-        ) as Class<T>
-        const stylesheet = this.getStyleSheetFor(Class)
-        const index = ([...stylesheet.cssRules] as CSSStyleRule[]).findIndex(
+    public removeComponent<T extends Component>(
+        entity: Entity,
+        component: T | Class<T> | ComponentType,
+    ): void {
+        const stylesheet = this.getStyleSheetFor(component)
+        const componentMap = stylesheet[ECS_PROPERTIES]
+        const current = componentMap.get(entity)
+
+        if (!current) {
+            return
+        }
+
+        const ruleIndex = ([...stylesheet.cssRules] as CSSStyleRule[]).findIndex(
             rule => rule.selectorText === `._${entity.id}`,
         )
-
         entity.element.classList.remove(Component.typeOf(component))
-
-        if (index !== -1) {
-            this.getStyleSheetFor(Class).deleteRule(index)
+        this.root.dispatchEvent(new ComponentRemovedEvent(current, entity))
+        if (ruleIndex !== -1) {
+            stylesheet.deleteRule(ruleIndex)
         }
+
+        // TODO: Maybe clean up empty stylesheets?
     }
 
     private getStyleSheetFor<T extends Component>(
@@ -179,14 +208,41 @@ export class World implements IWorld {
     }
 
     public addTag(entity: Entity, tag: Tag): void {
-        entity.element.classList.add(tag)
+        const classes = entity.element.classList
+
+        if (!classes.contains(tag)) {
+            entity.element.classList.add(tag)
+            this.root.dispatchEvent(new TagAddedEvent(tag, entity))
+        }
+    }
+
+    public removeTag(entity: Entity, tag: Tag): void {
+        const classes = entity.element.classList
+
+        if (classes.contains(tag)) {
+            entity.element.classList.remove(tag)
+            this.root.dispatchEvent(new TagRemovedEvent(tag, entity))
+        }
     }
 
     public addComponent<T extends Component>(entity: Entity, component: T): void {
         const type = Component.typeOf(component)
-        this.getStyleSheetFor(component)[ECS_PROPERTIES].set(entity, component)
+        const componentMap = this.getStyleSheetFor(component)[ECS_PROPERTIES]
+        const previous = componentMap.get(entity)
 
-        entity.element.classList.add(type)
+        if (previous === component) {
+            return
+        }
+
+        if (previous) {
+            componentMap.delete(entity)
+            this.root.dispatchEvent(new ComponentRemovedEvent(previous, entity))
+        } else {
+            entity.element.classList.add(type)
+        }
+
+        componentMap.set(entity, component)
+        this.root.dispatchEvent(new ComponentAddedEvent(component, entity))
     }
 
     public getComponents(entity: Entity): Component[] {

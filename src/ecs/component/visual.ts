@@ -9,11 +9,11 @@ export interface VisualOptions {
 }
 
 export class Visual extends Component {
-    public zIndex: number
-    public strokeStyle: string | null
-    public fillStyle: string | null
-    public lineDash: readonly number[] | null
-    public lineWidth: number | null
+    public readonly zIndex: number
+    public readonly strokeStyle: string | null
+    public readonly fillStyle: string | null
+    public readonly lineDash: readonly number[] | null
+    public readonly lineWidth: number | null
 
     public constructor(data: VisualOptions) {
         super()

@@ -6,7 +6,7 @@ export enum ObstructionType {
 }
 
 export class Obstruction extends Component {
-    private _obstructs: Set<ObstructionType>
+    private _obstructs: ReadonlySet<ObstructionType>
 
     public constructor(data: { obstructs: Iterable<ObstructionType> }) {
         super()

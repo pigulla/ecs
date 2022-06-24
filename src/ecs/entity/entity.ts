@@ -11,11 +11,11 @@ export class Entity {
 
     private readonly world: IWorld
 
-    public constructor(world: IWorld, element: HTMLDivElement) {
+    public constructor(world: IWorld, id: number, element: HTMLDivElement) {
         this.world = world
         this.element = element
 
-        this.id = Number.parseInt(this.element.id, 10)
+        this.id = id
         this.name = this.element.title
     }
 

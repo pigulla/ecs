@@ -1,3 +1,4 @@
+import { immerable } from 'immer'
 import type { Class, Opaque } from 'type-fest'
 
 export type ComponentType = Opaque<string, 'component-type'>
@@ -7,6 +8,8 @@ export function isComponentType(value: string): value is ComponentType {
 }
 
 export abstract class Component {
+    public readonly [immerable] = true
+
     public getType(): ComponentType {
         return Component.typeOf(this)
     }

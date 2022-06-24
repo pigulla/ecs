@@ -2,7 +2,12 @@ import { World } from './ecs'
 import { createTag } from './ecs/component'
 import { createWallsFromPoints, createDoor, createWindow, createSand } from './ecs/entity'
 
-const world = new World(document, { columns: 25, rows: 15 })
+const world = new World(
+    document,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    document.querySelector('#ecs')!,
+    { columns: 25, rows: 15 },
+)
 
 const ROOM = createTag('room')
 const room = world.createEntity({ name: 'Room' })
@@ -55,7 +60,5 @@ createSand(world, { coordinate: [13, 7] })
 createSand(world, { coordinate: [13, 8] })
 createSand(world, { coordinate: [13, 9] })
 createSand(world, { coordinate: [13, 10] })
-
-world.updateNeighborsForMovement()
 
 export { world }
