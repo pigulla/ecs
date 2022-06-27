@@ -1,6 +1,7 @@
 import type { Class } from 'type-fest'
 
-import type { Component, Tag } from './component'
+import type { Component } from './component'
+import type { Tag } from './tag'
 
 export interface Signature {
     readonly components: ReadonlySet<Class<Component>>

@@ -10,11 +10,11 @@ const root = ReactDOM.createRoot(document.querySelector('#root')!)
 
 import { world } from './scene'
 import { path } from './path'
-import { getDimensions, renderBackground, renderDebug } from './ecs/system/render'
 import { startGameLoop } from './game-loop'
-import type { Coordinate } from './ecs/geometry'
-import { createAdjacentMovementSystem } from './ecs/system/graph/adjacent-movement'
-import { createWallsFromPoints } from './ecs/entity/index'
+import type { Coordinate } from './game/geometry'
+import { getDimensions, renderBackground, renderDebug } from './game/system/render'
+import { createAdjacentMovementSystem } from './game/system/graph'
+import { createWallsFromPoints } from './game/entity'
 
 root.render(
     <React.StrictMode>

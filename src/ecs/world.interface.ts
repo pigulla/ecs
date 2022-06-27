@@ -1,6 +1,6 @@
 import type { Class } from 'type-fest'
 
-import type { Component, ComponentType, Tag } from './component'
+import type { Component, ComponentType } from './component'
 import type { Entity } from './entity'
 import type {
     ComponentAddedEvent,
@@ -12,7 +12,8 @@ import type {
     TagRemovedEvent,
 } from './event'
 import type { Signal } from './signal'
-import type { ISystem } from './system'
+import type { ISystem } from './system.interface'
+import type { Tag } from './tag'
 
 export interface IWorld {
     readonly columns: number
@@ -25,6 +26,7 @@ export interface IWorld {
     removeTag(entity: Entity, tag: Tag): void
     setComponent<T extends Component>(entity: Entity, component: T): void
     createEntity(data?: { name?: string; parent?: Entity }): Entity
+    findComponents<T extends Component>(Class: Class<T>): T[]
     findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[]
     getComponent<T extends Component>(entity: Entity, Class: Class<T>): T
     getComponents(entity: Entity): Component[]

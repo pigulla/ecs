@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { Class, SetRequired } from 'type-fest'
 
-import type { ComponentType, Tag } from './component'
+import type { ComponentType } from './component'
 import { Component, isComponentType } from './component'
 import type { Entity } from './entity'
 import {
@@ -14,16 +14,20 @@ import {
     TagRemovedEvent,
 } from './event'
 import type { Signal } from './signal'
-import type { ISystem } from './system'
+import type { ISystem } from './system.interface'
+import type { Tag } from './tag'
 import type { IWorld } from './world.interface'
 
 const ECS_PROPERTIES = '--ecs-properties'
 
-type EcsStyleSheetUninitialized = CSSStyleSheet &
+type EcsStyleSheetUninitialized<T extends Component = Component> = CSSStyleSheet &
     Element & {
-        [ECS_PROPERTIES]?: Map<Entity, Component>
+        [ECS_PROPERTIES]?: Map<Entity, T>
     }
-type EcsStyleSheet = SetRequired<EcsStyleSheetUninitialized, typeof ECS_PROPERTIES>
+type EcsStyleSheet<T extends Component = Component> = SetRequired<
+    EcsStyleSheetUninitialized<T>,
+    typeof ECS_PROPERTIES
+>
 
 const ENTITY_REF = Symbol('entity-reference')
 
@@ -125,6 +129,14 @@ export class World implements IWorld {
         })
     }
 
+    public findComponents<T extends Component>(Class: Class<T>): T[] {
+        const styleSheet = this.getStyleSheetFor(Class)[ECS_PROPERTIES]
+
+        return [
+            ...this.entities.querySelectorAll<ElementWithEntityRef>(`.${Component.typeOf(Class)}`),
+        ].map(element => styleSheet.get(element[ENTITY_REF])!)
+    }
+
     public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[] {
         const selectors: string[] = [
             [...Classes].map((Class: Class<Component>) => `.${Component.typeOf(Class)}`).join(''),
@@ -207,7 +219,7 @@ export class World implements IWorld {
 
     private getStyleSheetFor<T extends Component>(
         Class: ComponentType | T | Class<T>,
-    ): EcsStyleSheet {
+    ): EcsStyleSheet<T> {
         const type = Component.typeOf(Class)
         // The 'style' prefix is obviously overly specific, it's just for documentary purposes
         const styleSheet = this.document.querySelector<EcsStyleSheetUninitialized>(
@@ -226,7 +238,7 @@ export class World implements IWorld {
             styleSheet[ECS_PROPERTIES] = new Map()
         }
 
-        return styleSheet as EcsStyleSheet
+        return styleSheet as EcsStyleSheet<T>
     }
 
     public addTag(entity: Entity, tag: Tag): void {
@@ -282,6 +294,6 @@ export class World implements IWorld {
             throw new Error('Component not found')
         }
 
-        return maybeComponent as T
+        return maybeComponent
     }
 }

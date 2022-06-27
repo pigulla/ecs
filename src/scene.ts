@@ -1,6 +1,5 @@
-import { World } from './ecs'
-import { createTag } from './ecs/component'
-import { createWallsFromPoints, createDoor, createWindow, createTerrain } from './ecs/entity/index'
+import { createTag, World } from './ecs'
+import { createDoor, createTerrain, createWallsFromPoints, createWindow } from './game/entity'
 
 const world = new World(
     document,

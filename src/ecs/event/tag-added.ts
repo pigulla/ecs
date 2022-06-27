@@ -1,5 +1,5 @@
-import type { Tag } from '../component'
 import type { Entity } from '../entity'
+import type { Tag } from '../tag'
 
 export class TagAddedEvent extends Event {
     public static readonly NAME = 'tag-added'
