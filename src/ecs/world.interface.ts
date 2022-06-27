@@ -10,7 +10,6 @@ import type {
     TagAddedEvent,
     TagRemovedEvent,
 } from './event'
-import type { Coordinate } from './geometry'
 import type { Signal } from './signal'
 import type { Signature } from './signature'
 import type { ISystem } from './system'
@@ -22,7 +21,6 @@ export interface IWorld {
     step(): void
     signal(signal: Signal): void
     addSystem(system: ISystem): void
-    getNeighborsForMovement(): [Coordinate, number][][][]
     addTag(entity: Entity, tag: Tag): void
     removeTag(entity: Entity, tag: Tag): void
     addComponent<T extends Component>(entity: Entity, component: T): void

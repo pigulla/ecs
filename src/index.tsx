@@ -60,7 +60,7 @@ debug.height = dimensions.totalHeight
 
 let averageFps = 0
 
-world.addSystem(world => createAdjacentMovementSystem(world))
+world.addSystem(createAdjacentMovementSystem(world))
 world.addSystem(world => renderBackground(world, dimensions, bgCtx))
 world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, mouseCoords, 15))
 
@@ -94,6 +94,7 @@ world.onTagAdded(({ tag, entity }) => {
 world.onTagRemoved(({ tag, entity }) => {
     console.info(`Tag ${tag} removed from entity ${entity}`)
 })
+
 setTimeout(() => {
     createWallsFromPoints(world, [
         [18, 3],

@@ -3,6 +3,7 @@ import { COLUMN, ROW } from '../geometry'
 import type { IWorld } from '../world.interface'
 
 import { additionalMovementCost } from './additional-movement-cost'
+import { AdjacentMovement } from './graph/adjacent-movement'
 
 interface Result {
     path: Readonly<Coordinate>[]
@@ -20,15 +21,15 @@ export function shortestPaths(
         path: Readonly<Coordinate>[]
     }
 
-    const neighborsForMovement = world.getNeighborsForMovement()
+    const amc = world.findEntities([AdjacentMovement], [])[0]
+    const adjacentMovement = world.getComponent(amc, AdjacentMovement)
+
     const result = initShortestPathResult()
     const queue: QueueItem[] = [{ coordinate: origin, movementPoints: 0, path: [] }]
     let current: QueueItem | undefined
 
     while ((current = queue.shift())) {
-        for (const [neighbor, cost] of neighborsForMovement[current.coordinate[COLUMN]]![
-            current.coordinate[ROW]
-        ]) {
+        for (const [neighbor, cost] of adjacentMovement.getNeighbors(current.coordinate)) {
             const movementPoints =
                 current.movementPoints + cost + additionalMovementCost(world, neighbor)
             const path = [...current.path, neighbor]

@@ -12,12 +12,9 @@ import {
     TagAddedEvent,
     TagRemovedEvent,
 } from './event'
-import type { Coordinate } from './geometry'
-import { COLUMN, ROW } from './geometry'
 import type { Signal } from './signal'
 import type { Signature } from './signature'
 import type { ISystem } from './system'
-import { hasLineOfMovement } from './system/has-line-of-movement'
 import type { IWorld } from './world.interface'
 
 const ECS_PROPERTIES = '--ecs-properties'
@@ -159,41 +156,6 @@ export class World implements IWorld {
                 callback(onComponentRemovedEvent)
             }
         })
-    }
-
-    public getNeighborsForMovement(): [Coordinate, number][][][] {
-        const MOVEMENT_COST_ORTHOGONAL = 2
-        const MOVEMENT_COST_DIAGONAL = 3
-
-        const result: [Coordinate, number][][][] = Array.from({ length: this.columns }).map(() =>
-            Array.from({ length: this.rows }),
-        )
-
-        for (let column = 0; column < this.columns; column++) {
-            for (let row = 0; row < this.rows; row++) {
-                const candidates: [Coordinate, number][] = [
-                    [[column - 1, row - 1], MOVEMENT_COST_DIAGONAL], //   NW
-                    [[column - 1, row + 0], MOVEMENT_COST_ORTHOGONAL], // W
-                    [[column - 1, row + 1], MOVEMENT_COST_DIAGONAL], //   SW
-                    [[column + 0, row - 1], MOVEMENT_COST_ORTHOGONAL], // N
-                    [[column + 0, row + 1], MOVEMENT_COST_ORTHOGONAL], // S
-                    [[column + 1, row - 1], MOVEMENT_COST_DIAGONAL], //   NE
-                    [[column + 1, row + 0], MOVEMENT_COST_ORTHOGONAL], // E
-                    [[column + 1, row + 1], MOVEMENT_COST_DIAGONAL], //   SE
-                ]
-
-                result[column]![row] = candidates.filter(
-                    ([neighbor, _cost]) =>
-                        neighbor[ROW] >= 0 &&
-                        neighbor[ROW] < this.rows &&
-                        neighbor[COLUMN] >= 0 &&
-                        neighbor[COLUMN] < this.columns &&
-                        hasLineOfMovement(this, [column, row], neighbor),
-                )
-            }
-        }
-
-        return result
     }
 
     public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[] {
