@@ -1,4 +1,4 @@
-export function startGameLoop(draw: (fps: number) => void): void {
+export function startGameLoop(callback: (time: number, fps: number) => void): void {
     const SAMPLES = 30 * 3
     const slidingWindowFps = Array.from<number>({ length: SAMPLES }).fill(0)
     let frame = 0
@@ -13,7 +13,7 @@ export function startGameLoop(draw: (fps: number) => void): void {
         slidingWindowFps[frame % SAMPLES] = fps
         const average = slidingWindowFps.reduce((sum, n) => sum + n, 0) / SAMPLES
 
-        draw(average)
+        callback(time, average)
 
         window.requestAnimationFrame(gameLoop)
     }

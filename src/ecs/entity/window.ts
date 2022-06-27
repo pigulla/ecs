@@ -1,4 +1,4 @@
-import { Obstruction, ObstructionType, OrthogonalLine, Visual } from '../component'
+import { OrthogonalLine, Visual, obstructsMovement } from '../component'
 import type { Entity } from '../entity'
 import type { Coordinate } from '../geometry'
 import type { IWorld } from '../world.interface'
@@ -10,7 +10,7 @@ export function createWindow(
 ): Entity {
     const window = world.createEntity({ parent })
 
-    world.addComponent(window, new Obstruction({ obstructs: [ObstructionType.MOVEMENT] }))
+    world.addTag(window, obstructsMovement)
     world.addComponent(window, new OrthogonalLine({ from: data.from, to: data.to }))
     world.addComponent(window, new Visual({ strokeStyle: 'rgba(64,64,255,0.8)', lineWidth: 2 }))
 

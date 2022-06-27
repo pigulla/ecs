@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { Class, SetRequired } from 'type-fest'
 
 import type { ComponentType, Tag } from './component'
-import { Component, isComponentType, ObstructionType } from './component'
+import { Component, isComponentType } from './component'
 import type { Entity } from './entity'
 import {
     ComponentAddedEvent,
@@ -14,7 +14,10 @@ import {
 } from './event'
 import type { Coordinate } from './geometry'
 import { COLUMN, ROW } from './geometry'
-import { hasLineOf } from './system'
+import type { Signal } from './signal'
+import type { Signature } from './signature'
+import type { ISystem } from './system'
+import { hasLineOfMovement } from './system/has-line-of-movement'
 import type { IWorld } from './world.interface'
 
 const ECS_PROPERTIES = '--ecs-properties'
@@ -36,40 +39,126 @@ export class World implements IWorld {
     private readonly document: Document
     private readonly root: Element
     private readonly entities: ShadowRoot
+    private readonly systems: ISystem[]
     private nextEntityId: number
+    private signals: Set<Signal>
 
     public constructor(document: Document, root: Element, data: { rows: number; columns: number }) {
         this.columns = data.columns
         this.rows = data.rows
         this.document = document
         this.root = root
+        this.systems = []
+        this.signals = new Set()
 
         this.entities = this.root.attachShadow({ mode: 'closed' })
         this.nextEntityId = 1
     }
 
-    public onTagAdded(callback: (event: TagAddedEvent) => void): void {
-        this.root.addEventListener(TagAddedEvent.NAME, callback as EventListener)
+    public step(): void {
+        for (const system of this.systems) {
+            system(this, this.signals)
+        }
+
+        this.signals = new Set()
     }
 
-    public onTagRemoved(callback: (event: TagRemovedEvent) => void): void {
-        this.root.addEventListener(TagRemovedEvent.NAME, callback as EventListener)
+    public signal(signal: Signal): void {
+        if (this.signals.has(signal)) {
+            return
+        }
+
+        this.signals.add(signal)
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string,@typescript-eslint/restrict-template-expressions
+        console.log(`Signal '${signal}' added`)
     }
 
-    public onEntityCreated(callback: (event: EntityCreatedEvent) => void): void {
-        this.root.addEventListener(EntityCreatedEvent.NAME, callback as EventListener)
+    public addSystem(system: ISystem): void {
+        this.systems.push(system)
     }
 
-    public onEntityDeleted(callback: (event: EntityDeletedEvent) => void): void {
-        this.root.addEventListener(EntityDeletedEvent.NAME, callback as EventListener)
+    private matches(entity: Entity, signature: Signature): boolean {
+        const selector = [
+            [...signature.tags].map(tag => `.${tag}`).join('.'),
+            [...signature.components].map(component => `.${Component.typeOf(component)}`).join('.'),
+        ].join('')
+
+        return this.entityElement(entity).matches(selector)
     }
 
-    public onComponentAdded(callback: (event: ComponentAddedEvent) => void): void {
-        this.root.addEventListener(ComponentAddedEvent.NAME, callback as EventListener)
+    public onTagAdded(callback: (event: TagAddedEvent) => void, signature?: Signature): void {
+        this.root.addEventListener(TagAddedEvent.NAME, event => {
+            const onTagAddedEvent = event as TagAddedEvent
+
+            if (signature === undefined || this.matches(onTagAddedEvent.entity, signature)) {
+                callback(onTagAddedEvent)
+            }
+        })
     }
 
-    public onComponentRemoved(callback: (event: ComponentRemovedEvent) => void): void {
-        this.root.addEventListener(ComponentRemovedEvent.NAME, callback as EventListener)
+    public onTagRemoved(callback: (event: TagRemovedEvent) => void, signature?: Signature): void {
+        this.root.addEventListener(TagRemovedEvent.NAME, event => {
+            const onTagRemovedEvent = event as TagRemovedEvent
+
+            if (signature === undefined || this.matches(onTagRemovedEvent.entity, signature)) {
+                callback(onTagRemovedEvent)
+            }
+        })
+    }
+
+    public onEntityCreated(
+        callback: (event: EntityCreatedEvent) => void,
+        signature?: Signature,
+    ): void {
+        this.root.addEventListener(EntityCreatedEvent.NAME, event => {
+            const onEntityCreatedEvent = event as EntityCreatedEvent
+
+            if (signature === undefined || this.matches(onEntityCreatedEvent.entity, signature)) {
+                callback(onEntityCreatedEvent)
+            }
+        })
+    }
+
+    public onEntityDeleted(
+        callback: (event: EntityDeletedEvent) => void,
+        signature?: Signature,
+    ): void {
+        this.root.addEventListener(EntityDeletedEvent.NAME, event => {
+            const onEntityDeletedEvent = event as EntityDeletedEvent
+
+            if (signature === undefined || this.matches(onEntityDeletedEvent.entity, signature)) {
+                callback(onEntityDeletedEvent)
+            }
+        })
+    }
+
+    public onComponentAdded(
+        callback: (event: ComponentAddedEvent) => void,
+        signature?: Signature,
+    ): void {
+        this.root.addEventListener(ComponentAddedEvent.NAME, event => {
+            const onComponentAddedEvent = event as ComponentAddedEvent
+
+            if (signature === undefined || this.matches(onComponentAddedEvent.entity, signature)) {
+                callback(onComponentAddedEvent)
+            }
+        })
+    }
+
+    public onComponentRemoved(
+        callback: (event: ComponentRemovedEvent) => void,
+        signature?: Signature,
+    ): void {
+        this.root.addEventListener(ComponentRemovedEvent.NAME, event => {
+            const onComponentRemovedEvent = event as ComponentRemovedEvent
+
+            if (
+                signature === undefined ||
+                this.matches(onComponentRemovedEvent.entity, signature)
+            ) {
+                callback(onComponentRemovedEvent)
+            }
+        })
     }
 
     public getNeighborsForMovement(): [Coordinate, number][][][] {
@@ -99,7 +188,7 @@ export class World implements IWorld {
                         neighbor[ROW] < this.rows &&
                         neighbor[COLUMN] >= 0 &&
                         neighbor[COLUMN] < this.columns &&
-                        hasLineOf(this, [column, row], neighbor, [ObstructionType.MOVEMENT]),
+                        hasLineOfMovement(this, [column, row], neighbor),
                 )
             }
         }

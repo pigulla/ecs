@@ -13,6 +13,8 @@ import { path } from './path'
 import { getDimensions, renderBackground, renderDebug } from './ecs/system/render'
 import { startGameLoop } from './game-loop'
 import type { Coordinate } from './ecs/geometry'
+import { createAdjacentMovementSystem } from './ecs/system/graph/adjacent-movement'
+import { createWallsFromPoints } from './ecs/entity/index'
 
 root.render(
     <React.StrictMode>
@@ -56,22 +58,45 @@ foreground.height = dimensions.totalHeight
 debug.width = dimensions.totalWidth
 debug.height = dimensions.totalHeight
 
-renderBackground(world, dimensions, bgCtx)
+let averageFps = 0
 
-startGameLoop(fps => {
-    renderDebug(world, dimensions, debugCtx, fps, mouseCoords, 15)
+world.addSystem(world => createAdjacentMovementSystem(world))
+world.addSystem(world => renderBackground(world, dimensions, bgCtx))
+world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, mouseCoords, 15))
+
+startGameLoop((time, fps) => {
+    averageFps = fps
+    world.step()
 })
 
 world.onTagAdded(({ tag, entity }) => console.info(`Tag ${tag} added to entity ${entity} created`))
 world.onTagRemoved(({ tag, entity }) =>
     console.info(`Tag ${tag} removed from entity ${entity} created`),
 )
-world.onEntityDeleted(({ entity }) => console.info(`Entity ${entity} deleted`))
-world.onEntityCreated(({ entity }) => console.info(`Entity ${entity} created`))
-world.onEntityDeleted(({ entity }) => console.info(`Entity ${entity} deleted`))
-world.onComponentAdded(({ component, entity }) =>
-    console.info(`Component ${component.getType()} added to entity ${entity}`),
-)
-world.onComponentRemoved(({ component, entity }) =>
-    console.info(`Component ${component.getType()} removed from entity ${entity}`),
-)
+world.onEntityDeleted(({ entity }) => {
+    console.info(`Entity ${entity} deleted`)
+})
+world.onEntityCreated(({ entity }) => {
+    console.info(`Entity ${entity} created`)
+})
+world.onEntityDeleted(({ entity }) => {
+    console.info(`Entity ${entity} deleted`)
+})
+world.onComponentAdded(({ component, entity }) => {
+    console.info(`Component ${component.getType()} added to entity ${entity}`)
+})
+world.onComponentRemoved(({ component, entity }) => {
+    console.info(`Component ${component.getType()} removed from entity ${entity}`)
+})
+world.onTagAdded(({ tag, entity }) => {
+    console.info(`Tag ${tag} added to entity ${entity}`)
+})
+world.onTagRemoved(({ tag, entity }) => {
+    console.info(`Tag ${tag} removed from entity ${entity}`)
+})
+setTimeout(() => {
+    createWallsFromPoints(world, [
+        [18, 3],
+        [18, 7],
+    ])
+}, 3000)

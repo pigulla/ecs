@@ -26,6 +26,7 @@ canvas {
 
 canvas.background {
     z-index: 1;
+    background-color: white;
 }
 
 canvas.foreground {

@@ -1,9 +1,8 @@
-import { ObstructionType } from '../../component'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
 import type { IWorld } from '../../world.interface'
 import { additionalMovementCost } from '../additional-movement-cost'
-import { hasLineOf } from '../has-line-of'
+import { hasLineOfSight } from '../has-line-of-sight'
 import { shortestPaths } from '../shortest-paths'
 
 import type { Dimensions } from './types'
@@ -18,7 +17,7 @@ function renderLineOfSightOverlay(
 
     const { cellSizePx, world } = dimensions
     forEachSquare(dimensions, coordinates => {
-        ctx.fillStyle = hasLineOf(world, origin, coordinates, [ObstructionType.SIGHT])
+        ctx.fillStyle = hasLineOfSight(world, origin, coordinates)
             ? 'rgba(0, 255, 0, 0.25)'
             : 'rgba(255, 0, 0, 0.25)'
         ctx.fillRect(...squareCoordinates(dimensions, coordinates), cellSizePx, cellSizePx)

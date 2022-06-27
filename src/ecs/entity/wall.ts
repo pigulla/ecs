@@ -1,4 +1,4 @@
-import { Obstruction, ObstructionType, OrthogonalLine, Visual } from '../component'
+import { obstructsLineOfSight, obstructsMovement, OrthogonalLine, Visual } from '../component'
 import type { Entity } from '../entity'
 import type { Coordinate } from '../geometry'
 import type { IWorld } from '../world.interface'
@@ -13,12 +13,8 @@ export function createWallsFromPoints(
     for (let index = 1; index < points.length; index++) {
         const segment = world.createEntity({ name: 'wall', parent: wall })
 
-        world.addComponent(
-            segment,
-            new Obstruction({
-                obstructs: [ObstructionType.MOVEMENT, ObstructionType.SIGHT],
-            }),
-        )
+        world.addTag(segment, obstructsMovement)
+        world.addTag(segment, obstructsLineOfSight)
         world.addComponent(
             segment,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

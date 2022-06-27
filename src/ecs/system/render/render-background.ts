@@ -1,4 +1,4 @@
-import { Location, Obstruction, OrthogonalLine, Terrain, Visual } from '../../component'
+import { Location, obstructsMovement, OrthogonalLine, Terrain, Visual } from '../../component'
 import { COLUMN, ROW } from '../../geometry'
 import type { IWorld } from '../../world.interface'
 
@@ -106,7 +106,7 @@ function renderObstructions(
     { world, gridOffsetPx, cellSizePx }: Dimensions,
     ctx: CanvasRenderingContext2D,
 ): void {
-    const obstacles = world.findEntities([Obstruction, OrthogonalLine, Visual], [])
+    const obstacles = world.findEntities([OrthogonalLine, Visual], [obstructsMovement])
 
     for (const obstacle of obstacles) {
         const line = world.getComponent(obstacle, OrthogonalLine)
