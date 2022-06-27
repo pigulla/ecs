@@ -3,9 +3,9 @@ import type { Entity } from '../entity'
 import type { Coordinate } from '../geometry'
 import type { IWorld } from '../world.interface'
 
-export function createSand(
+export function createTerrain(
     world: IWorld,
-    data: { coordinate: Coordinate },
+    data: { coordinate: Coordinate; additionalCost: number },
     parent?: Entity,
 ): Entity {
     const sand = world.createEntity({ parent })
@@ -14,9 +14,9 @@ export function createSand(
     // be careful here when the location changes! Maybe use MutationObserver here?
     world.addTag(sand, coordinateTag(location.coordinates))
 
-    world.addComponent(sand, location)
-    world.addComponent(sand, new Terrain({ additionalMovementPoints: 3 }))
-    world.addComponent(sand, new Visual({ fillStyle: 'rgba(195, 128, 0, 0.5)' }))
+    world.setComponent(sand, location)
+    world.setComponent(sand, new Terrain({ additionalMovementPoints: data.additionalCost }))
+    world.setComponent(sand, new Visual({ fillStyle: 'rgba(195, 128, 0, 0.15)' }))
 
     return sand
 }

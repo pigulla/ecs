@@ -5,13 +5,13 @@ import type { Entity } from './entity'
 import type {
     ComponentAddedEvent,
     ComponentRemovedEvent,
+    ComponentUpdatedEvent,
     EntityCreatedEvent,
     EntityDeletedEvent,
     TagAddedEvent,
     TagRemovedEvent,
 } from './event'
 import type { Signal } from './signal'
-import type { Signature } from './signature'
 import type { ISystem } from './system'
 
 export interface IWorld {
@@ -23,7 +23,7 @@ export interface IWorld {
     addSystem(system: ISystem): void
     addTag(entity: Entity, tag: Tag): void
     removeTag(entity: Entity, tag: Tag): void
-    addComponent<T extends Component>(entity: Entity, component: T): void
+    setComponent<T extends Component>(entity: Entity, component: T): void
     createEntity(data?: { name?: string; parent?: Entity }): Entity
     findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[]
     getComponent<T extends Component>(entity: Entity, Class: Class<T>): T
@@ -33,13 +33,13 @@ export interface IWorld {
         component: T | Class<T> | ComponentType,
     ): void
     removeEntity(entity: Entity): void
-    onTagAdded(callback: (event: TagAddedEvent) => void, signature?: Signature): void
-    onTagRemoved(callback: (event: TagRemovedEvent) => void, signature?: Signature): void
-    onEntityCreated(callback: (event: EntityCreatedEvent) => void, signature?: Signature): void
-    onEntityDeleted(callback: (event: EntityDeletedEvent) => void, signature?: Signature): void
-    onComponentAdded(callback: (event: ComponentAddedEvent) => void, signature?: Signature): void
-    onComponentRemoved(
-        callback: (event: ComponentRemovedEvent) => void,
-        signature?: Signature,
+    onTagAdded(callback: (event: TagAddedEvent) => void): void
+    onTagRemoved(callback: (event: TagRemovedEvent) => void): void
+    onEntityCreated(callback: (event: EntityCreatedEvent) => void): void
+    onEntityDeleted(callback: (event: EntityDeletedEvent) => void): void
+    onComponentAdded(callback: (event: ComponentAddedEvent) => void): void
+    onComponentUpdated<T extends Component = Component>(
+        callback: (event: ComponentUpdatedEvent<T>) => void,
     ): void
+    onComponentRemoved(callback: (event: ComponentRemovedEvent) => void): void
 }

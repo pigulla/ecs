@@ -5,6 +5,7 @@ import type { ComponentType, Tag } from './component'
 import { Component, isComponentType } from './component'
 import type { Entity } from './entity'
 import {
+    ComponentUpdatedEvent,
     ComponentAddedEvent,
     ComponentRemovedEvent,
     EntityCreatedEvent,
@@ -13,7 +14,6 @@ import {
     TagRemovedEvent,
 } from './event'
 import type { Signal } from './signal'
-import type { Signature } from './signature'
 import type { ISystem } from './system'
 import type { IWorld } from './world.interface'
 
@@ -74,87 +74,54 @@ export class World implements IWorld {
         this.systems.push(system)
     }
 
-    private matches(entity: Entity, signature: Signature): boolean {
-        const selector = [
-            [...signature.tags].map(tag => `.${tag}`).join('.'),
-            [...signature.components].map(component => `.${Component.typeOf(component)}`).join('.'),
-        ].join('')
-
-        return this.entityElement(entity).matches(selector)
-    }
-
-    public onTagAdded(callback: (event: TagAddedEvent) => void, signature?: Signature): void {
+    public onTagAdded(callback: (event: TagAddedEvent) => void): void {
         this.root.addEventListener(TagAddedEvent.NAME, event => {
             const onTagAddedEvent = event as TagAddedEvent
-
-            if (signature === undefined || this.matches(onTagAddedEvent.entity, signature)) {
-                callback(onTagAddedEvent)
-            }
+            callback(onTagAddedEvent)
         })
     }
 
-    public onTagRemoved(callback: (event: TagRemovedEvent) => void, signature?: Signature): void {
+    public onTagRemoved(callback: (event: TagRemovedEvent) => void): void {
         this.root.addEventListener(TagRemovedEvent.NAME, event => {
             const onTagRemovedEvent = event as TagRemovedEvent
-
-            if (signature === undefined || this.matches(onTagRemovedEvent.entity, signature)) {
-                callback(onTagRemovedEvent)
-            }
+            callback(onTagRemovedEvent)
         })
     }
 
-    public onEntityCreated(
-        callback: (event: EntityCreatedEvent) => void,
-        signature?: Signature,
-    ): void {
+    public onEntityCreated(callback: (event: EntityCreatedEvent) => void): void {
         this.root.addEventListener(EntityCreatedEvent.NAME, event => {
             const onEntityCreatedEvent = event as EntityCreatedEvent
-
-            if (signature === undefined || this.matches(onEntityCreatedEvent.entity, signature)) {
-                callback(onEntityCreatedEvent)
-            }
+            callback(onEntityCreatedEvent)
         })
     }
 
-    public onEntityDeleted(
-        callback: (event: EntityDeletedEvent) => void,
-        signature?: Signature,
-    ): void {
+    public onEntityDeleted(callback: (event: EntityDeletedEvent) => void): void {
         this.root.addEventListener(EntityDeletedEvent.NAME, event => {
             const onEntityDeletedEvent = event as EntityDeletedEvent
-
-            if (signature === undefined || this.matches(onEntityDeletedEvent.entity, signature)) {
-                callback(onEntityDeletedEvent)
-            }
+            callback(onEntityDeletedEvent)
         })
     }
 
-    public onComponentAdded(
-        callback: (event: ComponentAddedEvent) => void,
-        signature?: Signature,
-    ): void {
+    public onComponentAdded(callback: (event: ComponentAddedEvent) => void): void {
         this.root.addEventListener(ComponentAddedEvent.NAME, event => {
             const onComponentAddedEvent = event as ComponentAddedEvent
-
-            if (signature === undefined || this.matches(onComponentAddedEvent.entity, signature)) {
-                callback(onComponentAddedEvent)
-            }
+            callback(onComponentAddedEvent)
         })
     }
 
-    public onComponentRemoved(
-        callback: (event: ComponentRemovedEvent) => void,
-        signature?: Signature,
-    ): void {
+    public onComponentRemoved(callback: (event: ComponentRemovedEvent) => void): void {
         this.root.addEventListener(ComponentRemovedEvent.NAME, event => {
             const onComponentRemovedEvent = event as ComponentRemovedEvent
+            callback(onComponentRemovedEvent)
+        })
+    }
 
-            if (
-                signature === undefined ||
-                this.matches(onComponentRemovedEvent.entity, signature)
-            ) {
-                callback(onComponentRemovedEvent)
-            }
+    public onComponentUpdated<T extends Component>(
+        callback: (event: ComponentUpdatedEvent<T>) => void,
+    ): void {
+        this.root.addEventListener(ComponentUpdatedEvent.NAME, event => {
+            const onComponentUpdatedEvent = event as ComponentUpdatedEvent<T>
+            callback(onComponentUpdatedEvent)
         })
     }
 
@@ -281,7 +248,7 @@ export class World implements IWorld {
         }
     }
 
-    public addComponent<T extends Component>(entity: Entity, component: T): void {
+    public setComponent<T extends Component>(entity: Entity, component: T): void {
         const type = Component.typeOf(component)
         const componentMap = this.getStyleSheetFor(component)[ECS_PROPERTIES]
         const previous = componentMap.get(entity)
@@ -290,15 +257,14 @@ export class World implements IWorld {
             return
         }
 
-        if (previous) {
-            componentMap.delete(entity)
-            this.root.dispatchEvent(new ComponentRemovedEvent(previous, entity))
-        } else {
-            this.entityElement(entity).classList.add(type)
-        }
-
+        this.entityElement(entity).classList.add(type)
         componentMap.set(entity, component)
-        this.root.dispatchEvent(new ComponentAddedEvent(component, entity))
+
+        this.root.dispatchEvent(
+            previous
+                ? new ComponentUpdatedEvent(component, previous, entity)
+                : new ComponentAddedEvent(component, entity),
+        )
     }
 
     public getComponents(entity: Entity): Component[] {

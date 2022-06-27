@@ -29,10 +29,11 @@ export function shortestPaths(
     let current: QueueItem | undefined
 
     while ((current = queue.shift())) {
-        for (const [neighbor, cost] of adjacentMovement.getNeighbors(current.coordinate)) {
+        for (const [neighbor, cost] of adjacentMovement.getCostToNeighbors(current.coordinate)) {
             const movementPoints =
                 current.movementPoints + cost + additionalMovementCost(world, neighbor)
             const path = [...current.path, neighbor]
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const previousResult = result[neighbor[COLUMN]]![neighbor[ROW]]
 
             if (
@@ -42,6 +43,7 @@ export function shortestPaths(
                 continue
             }
 
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             result[neighbor[COLUMN]]![neighbor[ROW]] = {
                 path,
                 movementPoints,
@@ -61,6 +63,7 @@ export function shortestPaths(
             Array.from<Result | null>({ length: world.rows }).fill(null),
         )
 
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         result[origin[COLUMN]]![origin[ROW]] = { path: [], movementPoints: 0 }
         return result
     }

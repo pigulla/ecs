@@ -11,8 +11,8 @@ export function createWindow(
     const window = world.createEntity({ parent })
 
     world.addTag(window, obstructsMovement)
-    world.addComponent(window, new OrthogonalLine({ from: data.from, to: data.to }))
-    world.addComponent(window, new Visual({ strokeStyle: 'rgba(64,64,255,0.8)', lineWidth: 2 }))
+    world.setComponent(window, new OrthogonalLine({ from: data.from, to: data.to }))
+    world.setComponent(window, new Visual({ strokeStyle: 'rgba(64,64,255,0.8)', lineWidth: 2 }))
 
     return window
 }

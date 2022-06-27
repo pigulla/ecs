@@ -30,27 +30,6 @@ export enum Direction {
     NORTH_WEST = 'NW',
 }
 
-function neighbor([column, row]: Readonly<Coordinate>, direction: Direction): Coordinate {
-    switch (direction) {
-        case Direction.NORTH:
-            return [column + 0, row - 1] // N
-        case Direction.NORTH_EAST:
-            return [column + 1, row - 1] // NE
-        case Direction.EAST:
-            return [column + 1, row + 0] // E
-        case Direction.SOUTH_EAST:
-            return [column + 1, row + 1] // SE
-        case Direction.SOUTH:
-            return [column + 0, row + 1] // S
-        case Direction.SOUTH_WEST:
-            return [column - 1, row + 1] // SW
-        case Direction.WEST:
-            return [column - 1, row + 0] // W
-        case Direction.NORTH_WEST:
-            return [column - 1, row - 1] // NW
-    }
-}
-
 // Not really a data-only component, but it sort of is from the client's perspective.
 export class AdjacentMovement extends Component {
     private readonly graph: Graph<Coordinate, number>
@@ -61,11 +40,7 @@ export class AdjacentMovement extends Component {
         this.graph = graph
     }
 
-    public getCost(from: Readonly<Coordinate>, direction: Direction): number | null {
-        return this.graph.getLink($(from), $(neighbor(from, direction)))?.data ?? null
-    }
-
-    public getNeighbors(coordinate: Readonly<Coordinate>): [Coordinate, number][] {
+    public getCostToNeighbors(coordinate: Readonly<Coordinate>): [Coordinate, number][] {
         const node = this.graph.getNode($(coordinate))
 
         if (!node || !node.links) {
@@ -73,6 +48,7 @@ export class AdjacentMovement extends Component {
         }
 
         return [...node.links].map(link => [
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             this.graph.getNode(link.toId)!.data,
             link.data as number,
         ])
@@ -80,6 +56,7 @@ export class AdjacentMovement extends Component {
 }
 
 function update(world: IWorld, graph: AdjacentMovementGraph): void {
+    // It would be sufficient to remove the links only, but it doesn't look like there's an API for that.
     graph.clear()
 
     for (let column = 0; column < world.columns; column++) {
@@ -122,7 +99,7 @@ export function createAdjacentMovementSystem(world: IWorld): ISystem {
     const component = new AdjacentMovement(graph)
 
     const entity = world.createEntity({ name: 'graph' })
-    world.addComponent(entity, component)
+    world.setComponent(entity, component)
     world.signal(RECALCULATE_ADJACENT_MOVEMENT)
 
     world.onComponentAdded(({ component }) => {

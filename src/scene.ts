@@ -1,6 +1,6 @@
 import { World } from './ecs'
 import { createTag } from './ecs/component'
-import { createWallsFromPoints, createDoor, createWindow, createSand } from './ecs/entity/index'
+import { createWallsFromPoints, createDoor, createWindow, createTerrain } from './ecs/entity/index'
 
 const world = new World(
     document,
@@ -54,11 +54,18 @@ createWallsFromPoints(world, [
     [9, 11],
 ])
 
-createSand(world, { coordinate: [13, 5] })
-createSand(world, { coordinate: [13, 6] })
-createSand(world, { coordinate: [13, 7] })
-createSand(world, { coordinate: [13, 8] })
-createSand(world, { coordinate: [13, 9] })
-createSand(world, { coordinate: [13, 10] })
+createTerrain(world, { coordinate: [13, 6], additionalCost: 3 })
+createTerrain(world, { coordinate: [12, 7], additionalCost: 3 })
+createTerrain(world, { coordinate: [13, 7], additionalCost: 5 })
+createTerrain(world, { coordinate: [14, 7], additionalCost: 3 })
+createTerrain(world, { coordinate: [11, 8], additionalCost: 3 })
+createTerrain(world, { coordinate: [12, 8], additionalCost: 5 })
+createTerrain(world, { coordinate: [13, 8], additionalCost: 5 })
+createTerrain(world, { coordinate: [14, 8], additionalCost: 5 })
+createTerrain(world, { coordinate: [15, 8], additionalCost: 3 })
+createTerrain(world, { coordinate: [12, 9], additionalCost: 3 })
+createTerrain(world, { coordinate: [13, 9], additionalCost: 5 })
+createTerrain(world, { coordinate: [14, 9], additionalCost: 3 })
+createTerrain(world, { coordinate: [13, 10], additionalCost: 3 })
 
 export { world }

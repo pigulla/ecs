@@ -15,12 +15,12 @@ export function createWallsFromPoints(
 
         world.addTag(segment, obstructsMovement)
         world.addTag(segment, obstructsLineOfSight)
-        world.addComponent(
+        world.setComponent(
             segment,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             new OrthogonalLine({ from: points[index - 1]!, to: points[index]! }),
         )
-        world.addComponent(segment, new Visual({ strokeStyle: 'rgba(0,0,0,1.0)', lineWidth: 3 }))
+        world.setComponent(segment, new Visual({ strokeStyle: 'rgba(0,0,0,1.0)', lineWidth: 3 }))
     }
 
     return wall

@@ -13,8 +13,8 @@ export function createDoor(
     world.addTag(door, obstructsMovement)
     world.addTag(door, obstructsLineOfSight)
 
-    world.addComponent(door, new OrthogonalLine({ from: data.from, to: data.to }))
-    world.addComponent(door, new Visual({ strokeStyle: 'rgba(128,64,0,1.0)', lineWidth: 2.5 }))
+    world.setComponent(door, new OrthogonalLine({ from: data.from, to: data.to }))
+    world.setComponent(door, new Visual({ strokeStyle: 'rgba(128,64,0,1.0)', lineWidth: 2.5 }))
 
     return door
 }

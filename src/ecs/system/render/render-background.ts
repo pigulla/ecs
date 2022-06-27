@@ -1,3 +1,5 @@
+import rgba from 'color-rgba'
+
 import { Location, obstructsMovement, OrthogonalLine, Terrain, Visual } from '../../component'
 import { COLUMN, ROW } from '../../geometry'
 import type { IWorld } from '../../world.interface'
@@ -86,12 +88,25 @@ function renderTerrain(
     { world, gridOffsetPx, cellSizePx }: Dimensions,
     ctx: CanvasRenderingContext2D,
 ): void {
-    const terrains = world.findEntities([Location, Terrain, Visual], [])
+    const entities = world.findEntities([Location, Terrain, Visual], [])
 
-    for (const terrain of terrains) {
-        const location = world.getComponent(terrain, Location)
+    for (const entity of entities) {
+        const location = world.getComponent(entity, Location)
+        const visual = world.getComponent(entity, Visual)
+        const terrain = world.getComponent(entity, Terrain)
 
-        withVisual(ctx, world.getComponent(terrain, Visual), () => {
+        withVisual(ctx, visual, () => {
+            if (visual.fillStyle) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+                const value = rgba(visual.fillStyle)
+
+                if (value) {
+                    const [r, g, b, a] = value as [number, number, number, number]
+                    const alpha = Math.min(1, a * terrain.additionalMovementPoints)
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
+                }
+            }
+
             ctx.fillRect(
                 gridOffsetPx + cellSizePx * location.coordinates[COLUMN],
                 gridOffsetPx + cellSizePx * location.coordinates[ROW],

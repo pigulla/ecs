@@ -1,5 +1,6 @@
 export * from './component-added'
 export * from './component-removed'
+export * from './component-updated'
 export * from './entity-created'
 export * from './entity-deleted'
 export * from './tag-added'

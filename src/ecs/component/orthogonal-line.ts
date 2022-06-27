@@ -5,7 +5,6 @@ import { Component } from './component'
 
 export class OrthogonalLine extends Component {
     public readonly from: Readonly<Coordinate>
-
     public readonly to: Readonly<Coordinate>
 
     public constructor(data: { from: Coordinate; to: Coordinate }) {

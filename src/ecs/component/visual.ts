@@ -21,7 +21,7 @@ export class Visual extends Component {
         this.zIndex = data.zIndex ?? 0
         this.strokeStyle = data.strokeStyle ?? null
         this.fillStyle = data.fillStyle ?? null
-        this.lineDash = data.lineDash ?? null
+        this.lineDash = data.lineDash ? [...data.lineDash] : null
         this.lineWidth = data.lineWidth ?? null
     }
 }
