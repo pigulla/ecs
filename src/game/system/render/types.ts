@@ -1,9 +1,9 @@
 import type { ReadonlyDeep } from 'type-fest'
 
-import type { IWorld } from '../../../ecs'
+import type { IReadonlyWorld } from '../../../ecs'
 
 export type Dimensions = ReadonlyDeep<{
-    world: IWorld
+    world: IReadonlyWorld
     width: number
     height: number
     totalWidth: number

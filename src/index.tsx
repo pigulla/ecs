@@ -9,12 +9,12 @@ import { App } from './App'
 const root = ReactDOM.createRoot(document.querySelector('#root')!)
 
 import { world } from './scene'
-import { path } from './path'
 import { startGameLoop } from './game-loop'
 import type { Coordinate } from './game/geometry'
 import { getDimensions, renderBackground, renderDebug } from './game/system/render'
-import { createAdjacentMovementSystem } from './game/system/graph'
 import { createWallsFromPoints } from './game/entity'
+import { MovementGraph } from './game/engine/movement-graph'
+import { Destination, Origin } from './game/engine'
 
 root.render(
     <React.StrictMode>
@@ -22,9 +22,6 @@ root.render(
     </React.StrictMode>,
 )
 
-path(world)
-
-let mouseCoords: Coordinate | null = null
 const dimensions = getDimensions(world, { cellSizePx: 50, gridOffsetPx: 50 })
 
 const container = document.querySelector<HTMLDivElement>('#canvases')!
@@ -37,10 +34,26 @@ container.addEventListener('mousemove', (event: MouseEvent): void => {
     const x = event.clientX - offsetLeft - gridOffsetPx
     const y = event.clientY - offsetTop - gridOffsetPx
 
-    mouseCoords =
+    const newMouseCoords: Coordinate | null =
         x < 0 || x > world.columns * cellSizePx || y < 0 || y > world.rows * cellSizePx
             ? null
             : [Math.floor(x / cellSizePx), Math.floor(y / cellSizePx)]
+
+    world.getGlobalState(Origin).set(newMouseCoords)
+})
+
+container.addEventListener('click', (event: MouseEvent): void => {
+    const { gridOffsetPx, cellSizePx } = dimensions
+    const { offsetLeft, offsetTop } = event.target as HTMLDivElement
+    const x = event.clientX - offsetLeft - gridOffsetPx
+    const y = event.clientY - offsetTop - gridOffsetPx
+
+    const newMouseCoords: Coordinate | null =
+        x < 0 || x > world.columns * cellSizePx || y < 0 || y > world.rows * cellSizePx
+            ? null
+            : [Math.floor(x / cellSizePx), Math.floor(y / cellSizePx)]
+
+    world.getGlobalState(Destination).set(newMouseCoords)
 })
 
 const background = document.querySelector<HTMLCanvasElement>('canvas.background')!
@@ -60,9 +73,12 @@ debug.height = dimensions.totalHeight
 
 let averageFps = 0
 
-world.addSystem(createAdjacentMovementSystem(world))
+world.addGlobalState(new MovementGraph(world))
+world.addGlobalState(new Origin(world))
+world.addGlobalState(new Destination(world))
+
 world.addSystem(world => renderBackground(world, dimensions, bgCtx))
-world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, mouseCoords, 15))
+world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, 15))
 
 startGameLoop((time, fps) => {
     averageFps = fps

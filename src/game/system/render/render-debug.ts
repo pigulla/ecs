@@ -1,12 +1,12 @@
-import type { IWorld } from '../../../ecs'
+import type { IReadonlyWorld } from '../../../ecs'
+import { Visual } from '../../component'
+import { Destination, MovementGraph, Origin } from '../../engine'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
-import { additionalMovementCost } from '../additional-movement-cost'
-import { hasLineOfSight } from '../has-line-of-sight'
-import { shortestPaths } from '../shortest-paths'
+import { additionalMovementCost, hasLineOfSight, shortestPaths } from '../functional'
 
 import type { Dimensions } from './types'
-import { clear, forEachSquare, getDimensions, squareCoordinates } from './util'
+import { clear, forEachSquare, getDimensions, squareCoordinates, withVisual } from './util'
 
 function renderLineOfSightOverlay(
     dimensions: Dimensions,
@@ -24,6 +24,45 @@ function renderLineOfSightOverlay(
     })
 
     ctx.restore()
+}
+
+export function renderShortestPath(
+    dimensions: Dimensions,
+    ctx: CanvasRenderingContext2D,
+    path: readonly Coordinate[],
+): void {
+    if (path.length <= 2) {
+        return
+    }
+
+    withVisual(ctx, new Visual({ lineDash: [1, 0], lineWidth: 2, strokeStyle: 'red' }), () => {
+        const [head, ...tail] = path
+
+        ctx.moveTo(...squareCoordinates(dimensions, head, 'center'))
+
+        for (const step of tail) {
+            ctx.lineTo(...squareCoordinates(dimensions, step, 'center'))
+        }
+
+        ctx.stroke()
+    })
+
+    withVisual(ctx, new Visual({ lineWidth: 1, fillStyle: 'red' }), () => {
+        const RADIUS = 3
+
+        for (const coordinate of path) {
+            ctx.beginPath()
+            ctx.ellipse(
+                ...squareCoordinates(dimensions, coordinate, 'center'),
+                RADIUS,
+                RADIUS,
+                0,
+                0,
+                2 * Math.PI,
+            )
+            ctx.fill()
+        }
+    })
 }
 
 export function renderMovementCosts(
@@ -90,14 +129,15 @@ function renderFps(dimensions: Dimensions, ctx: CanvasRenderingContext2D, fps: n
 }
 
 export function renderDebug(
-    world: IWorld,
+    world: IReadonlyWorld,
     settings: Pick<Dimensions, 'cellSizePx' | 'gridOffsetPx'>,
     ctx: CanvasRenderingContext2D,
     fps: number,
-    origin: Coordinate | null = null,
     availableMovement: number = Number.POSITIVE_INFINITY,
 ): void {
     const dimensions = getDimensions(world, settings)
+    const origin = world.getGlobalState(Origin).get()
+    const destination = world.getGlobalState(Destination).get()
 
     ctx.lineWidth = 1
     ctx.setLineDash([])
@@ -108,5 +148,13 @@ export function renderDebug(
     if (origin) {
         renderLineOfSightOverlay(dimensions, ctx, origin)
         renderMovementCosts(dimensions, ctx, origin, availableMovement)
+
+        if (destination) {
+            const path = world.getGlobalState(MovementGraph).getShortestPath(origin, destination)
+
+            if (path) {
+                renderShortestPath(dimensions, ctx, path)
+            }
+        }
     }
 }

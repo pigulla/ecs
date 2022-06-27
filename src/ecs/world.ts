@@ -13,6 +13,7 @@ import {
     TagAddedEvent,
     TagRemovedEvent,
 } from './event'
+import type { GlobalState } from './global-state'
 import type { Signal } from './signal'
 import type { ISystem } from './system.interface'
 import type { Tag } from './tag'
@@ -41,6 +42,7 @@ export class World implements IWorld {
     private readonly root: Element
     private readonly entities: ShadowRoot
     private readonly systems: ISystem[]
+    private readonly globalStates: Map<Class<GlobalState>, GlobalState>
     private nextEntityId: number
     private signals: Set<Signal>
 
@@ -51,17 +53,42 @@ export class World implements IWorld {
         this.root = root
         this.systems = []
         this.signals = new Set()
+        this.globalStates = new Map()
 
         this.entities = this.root.attachShadow({ mode: 'closed' })
         this.nextEntityId = 1
     }
 
     public step(): void {
+        for (const engine of this.globalStates.values()) {
+            engine.onStepStart(this.signals)
+        }
+
         for (const system of this.systems) {
             system(this, this.signals)
         }
 
         this.signals = new Set()
+    }
+
+    public addGlobalState<T extends GlobalState>(globalState: T): void {
+        const Class = globalState.constructor as Class<T>
+
+        if (this.globalStates.has(Class)) {
+            throw new Error('Duplicate global state')
+        }
+
+        this.globalStates.set(Class, globalState)
+    }
+
+    public getGlobalState<T extends GlobalState>(Class: Class<T>): T {
+        const maybeEngine = this.globalStates.get(Class)
+
+        if (!maybeEngine) {
+            throw new Error('Global state not found')
+        }
+
+        return maybeEngine as T
     }
 
     public signal(signal: Signal): void {
@@ -287,7 +314,7 @@ export class World implements IWorld {
             .filter((maybeComponent): maybeComponent is Component => maybeComponent !== undefined)
     }
 
-    public getComponent<T extends Component>(entity: Entity, Class: Class<T>): T {
+    public getComponentOf<T extends Component>(entity: Entity, Class: Class<T>): T {
         const maybeComponent = this.getStyleSheetFor(Class)[ECS_PROPERTIES].get(entity)
 
         if (!maybeComponent) {
@@ -295,5 +322,15 @@ export class World implements IWorld {
         }
 
         return maybeComponent
+    }
+
+    public getSingletonComponent<T extends Component>(Class: Class<T>): T {
+        const components = this.getStyleSheetFor(Class)[ECS_PROPERTIES]
+
+        if (components.size !== 1) {
+            throw new Error(`Expected exactly one component but got ${components.size}`)
+        }
+
+        return [...components.values()][0]
     }
 }

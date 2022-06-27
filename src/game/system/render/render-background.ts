@@ -91,9 +91,9 @@ function renderTerrain(
     const entities = world.findEntities([Location, Terrain, Visual], [])
 
     for (const entity of entities) {
-        const location = world.getComponent(entity, Location)
-        const visual = world.getComponent(entity, Visual)
-        const terrain = world.getComponent(entity, Terrain)
+        const location = world.getComponentOf(entity, Location)
+        const visual = world.getComponentOf(entity, Visual)
+        const terrain = world.getComponentOf(entity, Terrain)
 
         withVisual(ctx, visual, () => {
             if (visual.fillStyle) {
@@ -124,9 +124,9 @@ function renderObstructions(
     const obstacles = world.findEntities([OrthogonalLine, Visual], [obstructsMovement])
 
     for (const obstacle of obstacles) {
-        const line = world.getComponent(obstacle, OrthogonalLine)
+        const line = world.getComponentOf(obstacle, OrthogonalLine)
 
-        withVisual(ctx, world.getComponent(obstacle, Visual), () => {
+        withVisual(ctx, world.getComponentOf(obstacle, Visual), () => {
             ctx.beginPath()
             ctx.moveTo(
                 gridOffsetPx + cellSizePx * line.from[COLUMN],

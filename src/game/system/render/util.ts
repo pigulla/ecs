@@ -1,4 +1,4 @@
-import type { IWorld } from '../../../ecs'
+import type { IReadonlyWorld } from '../../../ecs'
 import type { Visual } from '../../component'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
@@ -56,7 +56,7 @@ export function forEachSquare(
 }
 
 export function getDimensions(
-    world: IWorld,
+    world: IReadonlyWorld,
     { cellSizePx, gridOffsetPx }: { cellSizePx: number; gridOffsetPx: number },
 ): Dimensions {
     return {

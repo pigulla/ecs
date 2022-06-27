@@ -11,6 +11,7 @@ import type {
     TagAddedEvent,
     TagRemovedEvent,
 } from './event'
+import type { GlobalState } from './global-state'
 import type { Signal } from './signal'
 import type { ISystem } from './system.interface'
 import type { Tag } from './tag'
@@ -21,6 +22,8 @@ export interface IWorld {
 
     step(): void
     signal(signal: Signal): void
+    addGlobalState<T extends GlobalState>(globalState: T): void
+    getGlobalState<T extends GlobalState>(Class: Class<T>): T
     addSystem(system: ISystem): void
     addTag(entity: Entity, tag: Tag): void
     removeTag(entity: Entity, tag: Tag): void
@@ -28,7 +31,8 @@ export interface IWorld {
     createEntity(data?: { name?: string; parent?: Entity }): Entity
     findComponents<T extends Component>(Class: Class<T>): T[]
     findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[]
-    getComponent<T extends Component>(entity: Entity, Class: Class<T>): T
+    getSingletonComponent<T extends Component>(Class: Class<T>): T
+    getComponentOf<T extends Component>(entity: Entity, Class: Class<T>): T
     getComponents(entity: Entity): Component[]
     removeComponent<T extends Component>(
         entity: Entity,
@@ -45,3 +49,23 @@ export interface IWorld {
     ): void
     onComponentRemoved(callback: (event: ComponentRemovedEvent) => void): void
 }
+
+export type IReadonlyWorld = Pick<
+    IWorld,
+    | 'rows'
+    | 'columns'
+    | 'signal' // not really 'readonly'...
+    | 'getGlobalState'
+    | 'findEntities'
+    | 'findComponents'
+    | 'getSingletonComponent'
+    | 'getComponents'
+    | 'getComponentOf'
+    | 'onTagAdded'
+    | 'onTagRemoved'
+    | 'onComponentRemoved'
+    | 'onComponentAdded'
+    | 'onComponentUpdated'
+    | 'onEntityCreated'
+    | 'onEntityDeleted'
+>

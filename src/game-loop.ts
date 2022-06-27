@@ -1,6 +1,6 @@
 export function startGameLoop(callback: (time: number, fps: number) => void): void {
-    const SAMPLES = 30 * 3
-    const slidingWindowFps = Array.from<number>({ length: SAMPLES }).fill(0)
+    const SAMPLE_COUNT = 30 * 3
+    const slidingWindowFps = Array.from<number>({ length: SAMPLE_COUNT }).fill(0)
     let frame = 0
     let previous: DOMHighResTimeStamp
 
@@ -10,8 +10,8 @@ export function startGameLoop(callback: (time: number, fps: number) => void): vo
         previous = time
         frame++
 
-        slidingWindowFps[frame % SAMPLES] = fps
-        const average = slidingWindowFps.reduce((sum, n) => sum + n, 0) / SAMPLES
+        slidingWindowFps[frame % SAMPLE_COUNT] = fps
+        const average = slidingWindowFps.reduce((sum, n) => sum + n, 0) / SAMPLE_COUNT
 
         callback(time, average)
 

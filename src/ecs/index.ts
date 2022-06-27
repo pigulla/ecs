@@ -1,5 +1,6 @@
 export * from './component'
 export * from './entity'
+export * from './global-state'
 export * from './signal'
 export * from './signature'
 export * from './system.interface'
