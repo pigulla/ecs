@@ -7,7 +7,8 @@ import type { IReadonlyWorld, Signal } from '../../../ecs'
 import { GlobalState, signal } from '../../../ecs'
 import { obstructsMovement, Terrain } from '../../component'
 import type { Coordinate } from '../../geometry'
-import { COLUMN, ROW } from '../../geometry'
+import { COLUMN, isSameCoordinate, ROW } from '../../geometry'
+import { additionalMovementCost } from '../../system/functional/additional-movement-cost'
 
 import { canMoveAdjacent } from './can-move-adjacent'
 import { Direction, directionDelta, isDiagonal } from './direction'
@@ -16,6 +17,8 @@ import { nodeId as $ } from './node-id'
 type AdjacentMovementGraph = Graph<Coordinate, number>
 
 const RECALCULATE_ADJACENT_MOVEMENT = signal('recalculate-adjacent-movement')
+
+export type ShortestPath = [Coordinate[], number]
 
 export class MovementGraph extends GlobalState {
     public readonly MOVEMENT_COST_ORTHOGONAL = 2
@@ -56,10 +59,30 @@ export class MovementGraph extends GlobalState {
         })
     }
 
-    public getShortestPath(from: Coordinate, to: Coordinate): Coordinate[] | null {
+    public getShortestPath(from: Coordinate, to: Coordinate): ShortestPath | null {
+        // Looks like this is not handled well by the library. For a path from [2, 2] to [2, 2] it returns something
+        // like [2, 2] -> [3, 2] -> [2, 2].
+        if (isSameCoordinate(from, to)) {
+            return [[], 0]
+        }
+
         const result = this.pathFinder.find($(from), $(to))
 
-        return result.length === 0 ? null : result.map(node => node.data)
+        if (result.length === 0) {
+            return null
+        }
+
+        return [
+            result.map(node => node.data),
+            result.reduce((sum, node, idx) => {
+                if (idx < 1) {
+                    return sum
+                }
+
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                return sum + this.graph.getLink(node.id, result[idx - 1].id)!.data
+            }, 0),
+        ]
     }
 
     public getCostToNeighbors(coordinate: Coordinate): [Coordinate, number][] {
@@ -110,12 +133,14 @@ export class MovementGraph extends GlobalState {
                 Object.values(Direction)
                     .map<[Direction, Coordinate, number]>(direction => {
                         const [dc, dr] = directionDelta[direction]
+                        const neighbor: Coordinate = [column + dc, row + dr]
                         return [
                             direction,
-                            [column + dc, row + dr],
-                            isDiagonal(direction)
-                                ? this.MOVEMENT_COST_DIAGONAL
-                                : this.MOVEMENT_COST_ORTHOGONAL,
+                            neighbor,
+                            additionalMovementCost(this.world, neighbor) +
+                                (isDiagonal(direction)
+                                    ? this.MOVEMENT_COST_DIAGONAL
+                                    : this.MOVEMENT_COST_ORTHOGONAL),
                         ]
                     })
                     .filter(

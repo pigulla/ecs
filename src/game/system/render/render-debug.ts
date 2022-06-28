@@ -1,5 +1,6 @@
 import type { IReadonlyWorld } from '../../../ecs'
 import { Visual } from '../../component'
+import type { ShortestPath } from '../../engine'
 import { Destination, MovementGraph, Origin } from '../../engine'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
@@ -29,15 +30,18 @@ function renderLineOfSightOverlay(
 export function renderShortestPath(
     dimensions: Dimensions,
     ctx: CanvasRenderingContext2D,
-    path: readonly Coordinate[],
+    shortestPath: ShortestPath | null,
 ): void {
-    if (path.length <= 2) {
+    if (shortestPath === null || shortestPath[0].length <= 1) {
         return
     }
 
-    withVisual(ctx, new Visual({ lineDash: [1, 0], lineWidth: 2, strokeStyle: 'red' }), () => {
+    const [path, total] = shortestPath
+
+    withVisual(ctx, new Visual({ lineDash: [5, 5], lineWidth: 2, strokeStyle: 'red' }), () => {
         const [head, ...tail] = path
 
+        ctx.beginPath()
         ctx.moveTo(...squareCoordinates(dimensions, head, 'center'))
 
         for (const step of tail) {
@@ -48,7 +52,7 @@ export function renderShortestPath(
     })
 
     withVisual(ctx, new Visual({ lineWidth: 1, fillStyle: 'red' }), () => {
-        const RADIUS = 3
+        const RADIUS = 5
 
         for (const coordinate of path) {
             ctx.beginPath()
@@ -62,6 +66,23 @@ export function renderShortestPath(
             )
             ctx.fill()
         }
+    })
+
+    withVisual(ctx, new Visual({}), () => {
+        const fontSize = Math.ceil(dimensions.cellSizePx / 3)
+        const center = squareCoordinates(dimensions, path[path.length - 1], 'center')
+
+        const RADIUS = 15
+        ctx.fillStyle = 'red'
+        ctx.beginPath()
+        ctx.ellipse(...center, RADIUS, RADIUS, 0, 0, 2 * Math.PI)
+        ctx.fill()
+
+        ctx.font = `${fontSize}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillStyle = 'white'
+        ctx.fillText(total.toString(10), ...center)
     })
 }
 
@@ -150,11 +171,11 @@ export function renderDebug(
         renderMovementCosts(dimensions, ctx, origin, availableMovement)
 
         if (destination) {
-            const path = world.getGlobalState(MovementGraph).getShortestPath(origin, destination)
+            const shortestPath = world
+                .getGlobalState(MovementGraph)
+                .getShortestPath(origin, destination)
 
-            if (path) {
-                renderShortestPath(dimensions, ctx, path)
-            }
+            renderShortestPath(dimensions, ctx, shortestPath)
         }
     }
 }
