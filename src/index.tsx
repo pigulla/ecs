@@ -11,7 +11,7 @@ const root = ReactDOM.createRoot(document.querySelector('#root')!)
 import { world, ROOM } from './scene'
 import { startGameLoop } from './game-loop'
 import type { Coordinate } from './game/geometry'
-import { getDimensions, renderBackground, renderDebug } from './game/system/render'
+import { getDimensions, renderTerrain, renderDebug, renderBackground } from './game/system/render'
 import { createWallsFromPoints } from './game/entity'
 import { MovementGraph } from './game/global-state/movement-graph'
 import { Destination, Origin } from './game/global-state'
@@ -57,15 +57,19 @@ container.addEventListener('click', (event: MouseEvent): void => {
 })
 
 const background = document.querySelector<HTMLCanvasElement>('canvas.background')!
+const terrain = document.querySelector<HTMLCanvasElement>('canvas.terrain')!
 const foreground = document.querySelector<HTMLCanvasElement>('canvas.foreground')!
 const debug = document.querySelector<HTMLCanvasElement>('canvas.foreground')!
 
 const bgCtx = background.getContext('2d')!
+const trCtx = terrain.getContext('2d')!
 const fgCtx = foreground.getContext('2d')!
 const debugCtx = debug.getContext('2d')!
 
 background.width = dimensions.totalWidth
 background.height = dimensions.totalHeight
+terrain.width = dimensions.totalWidth
+terrain.height = dimensions.totalHeight
 foreground.width = dimensions.totalWidth
 foreground.height = dimensions.totalHeight
 debug.width = dimensions.totalWidth
@@ -77,7 +81,9 @@ world.addGlobalState(new MovementGraph(world))
 world.addGlobalState(new Origin(world))
 world.addGlobalState(new Destination(world))
 
-world.addSystem(world => renderBackground(world, dimensions, bgCtx))
+// TODO: Make reactive to the appropriate changes
+renderBackground(world, dimensions, bgCtx)
+renderTerrain(world, dimensions, trCtx)
 world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, 15))
 
 startGameLoop((time, fps) => {

@@ -29,10 +29,14 @@ canvas.background {
     background-color: white;
 }
 
-canvas.foreground {
+canvas.terrain {
     z-index: 2;
 }
 
-canvas.debug {
+canvas.foreground {
     z-index: 3;
+}
+
+canvas.debug {
+    z-index: 4;
 }

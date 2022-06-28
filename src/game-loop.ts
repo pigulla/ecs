@@ -5,8 +5,8 @@ export function startGameLoop(callback: (time: DOMHighResTimeStamp, fps: number)
     let previous: DOMHighResTimeStamp = performance.now()
 
     function gameLoop(time: DOMHighResTimeStamp): void {
-        const delta = time - previous
-        const averageFps = ewma(delta)
+        const deltaMs = time - previous
+        const averageFps = ewma(1000 / deltaMs)
         previous = time
 
         callback(time, averageFps)
