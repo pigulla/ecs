@@ -20,8 +20,8 @@ export interface IWorld {
     readonly columns: number
     readonly rows: number
 
-    step(): void
-    signal(signal: Signal): void
+    nextFrame(): void
+    signalNextFrame(signal: Signal): void
     addGlobalState<T extends GlobalState>(globalState: T): void
     getGlobalState<T extends GlobalState>(Class: Class<T>): T
     addSystem(system: ISystem): void
@@ -54,7 +54,7 @@ export type IReadonlyWorld = Pick<
     IWorld,
     | 'rows'
     | 'columns'
-    | 'signal' // not really 'readonly'...
+    | 'signalNextFrame'
     | 'getGlobalState'
     | 'findEntities'
     | 'findComponents'

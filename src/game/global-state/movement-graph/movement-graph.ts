@@ -4,7 +4,7 @@ import type { PathFinder } from 'ngraph.path'
 import { nba } from 'ngraph.path'
 
 import type { IReadonlyWorld, Signal } from '../../../ecs'
-import { GlobalState, signal } from '../../../ecs'
+import { GlobalState, createSignal } from '../../../ecs'
 import { obstructsMovement, Terrain } from '../../component'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, isSameCoordinate, ROW } from '../../geometry'
@@ -16,7 +16,7 @@ import { nodeId as $ } from './node-id'
 
 type AdjacentMovementGraph = Graph<Coordinate, number>
 
-const RECALCULATE_ADJACENT_MOVEMENT = signal('recalculate-adjacent-movement')
+const RECALCULATE_ADJACENT_MOVEMENT = createSignal('recalculate-adjacent-movement')
 
 export type ShortestPath = [Coordinate[], number]
 
@@ -35,26 +35,26 @@ export class MovementGraph extends GlobalState {
             distance: (_from, _to, link) => link.data,
         })
 
-        this.world.signal(RECALCULATE_ADJACENT_MOVEMENT)
+        this.world.signalNextFrame(RECALCULATE_ADJACENT_MOVEMENT)
 
         this.world.onComponentAdded(({ component }) => {
             if (component instanceof Terrain) {
-                this.world.signal(RECALCULATE_ADJACENT_MOVEMENT)
+                this.world.signalNextFrame(RECALCULATE_ADJACENT_MOVEMENT)
             }
         })
         this.world.onComponentRemoved(({ component }) => {
             if (component instanceof Terrain) {
-                this.world.signal(RECALCULATE_ADJACENT_MOVEMENT)
+                this.world.signalNextFrame(RECALCULATE_ADJACENT_MOVEMENT)
             }
         })
         this.world.onTagAdded(({ tag }) => {
             if (tag === obstructsMovement) {
-                this.world.signal(RECALCULATE_ADJACENT_MOVEMENT)
+                this.world.signalNextFrame(RECALCULATE_ADJACENT_MOVEMENT)
             }
         })
         this.world.onTagRemoved(({ tag }) => {
             if (tag === obstructsMovement) {
-                this.world.signal(RECALCULATE_ADJACENT_MOVEMENT)
+                this.world.signalNextFrame(RECALCULATE_ADJACENT_MOVEMENT)
             }
         })
     }
@@ -63,7 +63,7 @@ export class MovementGraph extends GlobalState {
         // Looks like this is not handled well by the library. For a path from [2, 2] to [2, 2] it returns something
         // like [2, 2] -> [3, 2] -> [2, 2].
         if (isSameCoordinate(from, to)) {
-            return [[], 0]
+            return [[from], 0]
         }
 
         const result = this.pathFinder.find($(from), $(to))
@@ -80,7 +80,7 @@ export class MovementGraph extends GlobalState {
                 }
 
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                return sum + this.graph.getLink(node.id, result[idx - 1].id)!.data
+                return sum + this.graph.getLink(result[idx - 1].id, node.id)!.data
             }, 0),
         ]
     }

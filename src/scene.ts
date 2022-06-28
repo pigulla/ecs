@@ -67,4 +67,4 @@ createTerrain(world, { coordinate: [13, 9], additionalCost: 5 })
 createTerrain(world, { coordinate: [14, 9], additionalCost: 3 })
 createTerrain(world, { coordinate: [13, 10], additionalCost: 3 })
 
-export { world }
+export { world, ROOM }

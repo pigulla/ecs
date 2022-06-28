@@ -1,12 +1,14 @@
 import type { IReadonlyWorld } from '../../../ecs'
-import { Terrain, Location, coordinateTag } from '../../component'
+import { Terrain, Location } from '../../component'
 import type { Coordinate } from '../../geometry'
+import { isSameCoordinate } from '../../geometry'
 
 export function additionalMovementCost(world: IReadonlyWorld, coordinate: Coordinate): number {
-    const tag = coordinateTag(coordinate)
-
     return world
-        .findEntities([Terrain, Location], [tag])
+        .findEntities([Terrain, Location], [])
+        .filter(entity =>
+            isSameCoordinate(world.getComponentOf(entity, Location).coordinates, coordinate),
+        )
         .reduce(
             (sum, entity) => sum + world.getComponentOf(entity, Terrain).additionalMovementPoints,
             0,

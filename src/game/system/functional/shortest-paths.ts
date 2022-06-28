@@ -1,9 +1,7 @@
 import type { IReadonlyWorld } from '../../../ecs'
-import { MovementGraph } from '../../engine/movement-graph'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
-
-import { additionalMovementCost } from './additional-movement-cost'
+import { MovementGraph } from '../../global-state/movement-graph'
 
 interface Result {
     path: Coordinate[]
@@ -38,8 +36,7 @@ export function shortestPaths(
 
     while ((current = queue.shift())) {
         for (const [neighbor, cost] of movementGraph.getCostToNeighbors(current.coordinate)) {
-            const movementPoints =
-                current.movementPoints + cost + additionalMovementCost(world, neighbor)
+            const movementPoints = current.movementPoints + cost
             const path = [...current.path, neighbor]
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const previousResult = result[neighbor[COLUMN]]![neighbor[ROW]]

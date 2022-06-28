@@ -1,9 +1,9 @@
 import type { IReadonlyWorld } from '../../ecs'
-import { GlobalState, signal } from '../../ecs'
+import { GlobalState, createSignal } from '../../ecs'
 import type { Coordinate } from '../geometry'
 import { isSameCoordinate } from '../geometry'
 
-export const MOUSE_COORDINATE_CHANGED = signal('mouse-coordinate-changed')
+export const MOUSE_COORDINATE_CHANGED = createSignal('mouse-coordinate-changed')
 
 export abstract class MouseoverCoordinate extends GlobalState {
     private current: Coordinate | null
@@ -23,7 +23,7 @@ export abstract class MouseoverCoordinate extends GlobalState {
         }
 
         this.current = coordinate
-        this.world.signal(MOUSE_COORDINATE_CHANGED)
+        this.world.signalNextFrame(MOUSE_COORDINATE_CHANGED)
     }
 
     public get(): Coordinate | null {

@@ -8,13 +8,13 @@ import { App } from './App'
 
 const root = ReactDOM.createRoot(document.querySelector('#root')!)
 
-import { world } from './scene'
+import { world, ROOM } from './scene'
 import { startGameLoop } from './game-loop'
 import type { Coordinate } from './game/geometry'
 import { getDimensions, renderBackground, renderDebug } from './game/system/render'
 import { createWallsFromPoints } from './game/entity'
-import { MovementGraph } from './game/engine/movement-graph'
-import { Destination, Origin } from './game/engine'
+import { MovementGraph } from './game/global-state/movement-graph'
+import { Destination, Origin } from './game/global-state'
 
 root.render(
     <React.StrictMode>
@@ -82,13 +82,11 @@ world.addSystem(world => renderDebug(world, dimensions, debugCtx, averageFps, 15
 
 startGameLoop((time, fps) => {
     averageFps = fps
-    world.step()
+    world.nextFrame()
 })
 
-world.onTagAdded(({ tag, entity }) => console.info(`Tag ${tag} added to entity ${entity} created`))
-world.onTagRemoved(({ tag, entity }) =>
-    console.info(`Tag ${tag} removed from entity ${entity} created`),
-)
+world.onTagAdded(({ tag, entity }) => console.info(`Tag ${tag} added to entity ${entity}`))
+world.onTagRemoved(({ tag, entity }) => console.info(`Tag ${tag} removed from entity ${entity}`))
 world.onEntityDeleted(({ entity }) => {
     console.info(`Entity ${entity} deleted`)
 })
@@ -104,12 +102,6 @@ world.onComponentAdded(({ component, entity }) => {
 world.onComponentRemoved(({ component, entity }) => {
     console.info(`Component ${component.getType()} removed from entity ${entity}`)
 })
-world.onTagAdded(({ tag, entity }) => {
-    console.info(`Tag ${tag} added to entity ${entity}`)
-})
-world.onTagRemoved(({ tag, entity }) => {
-    console.info(`Tag ${tag} removed from entity ${entity}`)
-})
 
 setTimeout(() => {
     createWallsFromPoints(world, [
@@ -117,3 +109,8 @@ setTimeout(() => {
         [18, 7],
     ])
 }, 3000)
+
+// @ts-expect-error
+window.world = world
+// @ts-expect-error
+window.ROOM = ROOM

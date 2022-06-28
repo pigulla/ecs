@@ -1,9 +1,9 @@
 import type { IReadonlyWorld } from '../../../ecs'
 import { Visual } from '../../component'
-import type { ShortestPath } from '../../engine'
-import { Destination, MovementGraph, Origin } from '../../engine'
 import type { Coordinate } from '../../geometry'
 import { COLUMN, ROW } from '../../geometry'
+import type { ShortestPath } from '../../global-state'
+import { Destination, MovementGraph, Origin } from '../../global-state'
 import { additionalMovementCost, hasLineOfSight, shortestPaths } from '../functional'
 
 import type { Dimensions } from './types'

@@ -4,6 +4,7 @@ import type { Class, SetRequired } from 'type-fest'
 import type { ComponentType } from './component'
 import { Component, isComponentType } from './component'
 import type { Entity } from './entity'
+import { createEntity } from './entity'
 import {
     ComponentUpdatedEvent,
     ComponentAddedEvent,
@@ -43,10 +44,12 @@ export class World implements IWorld {
     private readonly entities: ShadowRoot
     private readonly systems: ISystem[]
     private readonly globalStates: Map<Class<GlobalState>, GlobalState>
+    private readonly observer: MutationObserver
     private nextEntityId: number
     private signals: Set<Signal>
 
     public constructor(document: Document, root: Element, data: { rows: number; columns: number }) {
+        this.nextEntityId = 1
         this.columns = data.columns
         this.rows = data.rows
         this.document = document
@@ -54,14 +57,25 @@ export class World implements IWorld {
         this.systems = []
         this.signals = new Set()
         this.globalStates = new Map()
-
+        this.observer = new MutationObserver(this.onMutation.bind(this))
         this.entities = this.root.attachShadow({ mode: 'closed' })
-        this.nextEntityId = 1
+
+        this.observer.observe(this.entities, {
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+            childList: true,
+            subtree: true,
+        })
     }
 
-    public step(): void {
-        for (const engine of this.globalStates.values()) {
-            engine.onStepStart(this.signals)
+    private onMutation(_mutations: MutationRecord[], _observer: MutationObserver): void {
+        // no use case yet :(
+    }
+
+    public nextFrame(): void {
+        for (const globaleState of this.globalStates.values()) {
+            globaleState.onStepStart(this.signals)
         }
 
         for (const system of this.systems) {
@@ -82,16 +96,16 @@ export class World implements IWorld {
     }
 
     public getGlobalState<T extends GlobalState>(Class: Class<T>): T {
-        const maybeEngine = this.globalStates.get(Class)
+        const maybeGlobalState = this.globalStates.get(Class)
 
-        if (!maybeEngine) {
+        if (!maybeGlobalState) {
             throw new Error('Global state not found')
         }
 
-        return maybeEngine as T
+        return maybeGlobalState as T
     }
 
-    public signal(signal: Signal): void {
+    public signalNextFrame(signal: Signal): void {
         if (this.signals.has(signal)) {
             return
         }
@@ -180,10 +194,8 @@ export class World implements IWorld {
     }
 
     public createEntity({ name, parent }: { name?: string; parent?: Entity } = {}): Entity {
-        // TODO: Check that the name is allowed in a CSS class
-
         const element = this.document.createElement('div') as ElementWithEntityRef
-        const entity = `📂${(this.nextEntityId++).toString(10)}${name ? `-${name}` : ''}` as Entity
+        const entity = createEntity(this.nextEntityId++, name)
 
         element.id = entity
         if (name) {
