@@ -9,7 +9,6 @@ import { App } from './App'
 const root = ReactDOM.createRoot(document.querySelector('#root')!)
 
 import { world } from './scene'
-import { path } from './path'
 import { startGameLoop } from './game-loop'
 import type { Coordinate } from './game/geometry'
 import { getDimensions, renderBackground, renderDebug } from './game/system/render'
@@ -21,8 +20,6 @@ root.render(
         <App />
     </React.StrictMode>,
 )
-
-path(world)
 
 let mouseCoords: Coordinate | null = null
 const dimensions = getDimensions(world, { cellSizePx: 50, gridOffsetPx: 50 })
