@@ -11,7 +11,10 @@ export function startGameLoop(callback: (time: number, fps: number) => void): vo
         frame++
 
         slidingWindowFps[frame % SAMPLES] = fps
-        const average = slidingWindowFps.reduce((sum, n) => sum + n, 0) / SAMPLES
+        const average =
+            // Not sure what's up with Infinity here, but CBA to fix it.
+            slidingWindowFps.filter(v => Number.isFinite(v)).reduce((sum, n) => sum + n, 0) /
+            SAMPLES
 
         callback(time, average)
 
