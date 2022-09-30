@@ -20,11 +20,11 @@ import type { IWorld } from './world.interface'
 
 const ECS_PROPERTIES = '--ecs-properties'
 
-type EcsStyleSheetUninitialized<T extends Component = Component> = CSSStyleSheet &
+type EcsStyleSheetUninitialized<T extends Component> = CSSStyleSheet &
     Element & {
         [ECS_PROPERTIES]?: Map<Entity, T>
     }
-type EcsStyleSheet<T extends Component = Component> = SetRequired<
+type EcsStyleSheet<T extends Component> = SetRequired<
     EcsStyleSheetUninitialized<T>,
     typeof ECS_PROPERTIES
 >
@@ -33,27 +33,38 @@ const ENTITY_REF = Symbol('entity-reference')
 
 type ElementWithEntityRef = HTMLDivElement & { [ENTITY_REF]: Entity }
 
-export class World implements IWorld {
-    public readonly columns: number
-    public readonly rows: number
-
+export class World<Facts = never> implements IWorld<Facts> {
     private readonly document: Document
     private readonly root: Element
     private readonly entities: ShadowRoot
-    private readonly systems: ISystem[]
+    private readonly systems: ISystem<Facts>[]
+    private readonly facts: Map<unknown, unknown>
     private nextEntityId: number
+    private _currentStep: number
     private signals: Set<Signal>
 
-    public constructor(document: Document, root: Element, data: { rows: number; columns: number }) {
-        this.columns = data.columns
-        this.rows = data.rows
+    public constructor(document: Document, root: Element, facts: Record<string, unknown>) {
         this.document = document
         this.root = root
         this.systems = []
+        this._currentStep = 0
+        this.facts = new Map(Object.entries(facts))
         this.signals = new Set()
 
         this.entities = this.root.attachShadow({ mode: 'closed' })
         this.nextEntityId = 1
+    }
+
+    public getFact<T>(key: Facts): T {
+        if (!this.facts.has(key)) {
+            throw new Error('Unknown fact')
+        }
+
+        return this.facts.get(key) as T
+    }
+
+    public get currentStep(): number {
+        return this._currentStep
     }
 
     public step(): void {
@@ -61,6 +72,7 @@ export class World implements IWorld {
             system(this, this.signals)
         }
 
+        this._currentStep += 1
         this.signals = new Set()
     }
 
@@ -70,7 +82,6 @@ export class World implements IWorld {
         }
 
         this.signals.add(signal)
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string,@typescript-eslint/restrict-template-expressions
         console.log(`Signal '${signal}' added`)
     }
 
@@ -129,15 +140,20 @@ export class World implements IWorld {
         })
     }
 
-    public findComponents<T extends Component>(Class: Class<T>): T[] {
-        const styleSheet = this.getStyleSheetFor(Class)[ECS_PROPERTIES]
+    public getEntity(Classes: Iterable<Class<Component>>, tags: Iterable<Tag> = []): Entity {
+        const entities = this.findEntities(Classes, tags)
 
-        return [
-            ...this.entities.querySelectorAll<ElementWithEntityRef>(`.${Component.typeOf(Class)}`),
-        ].map(element => styleSheet.get(element[ENTITY_REF])!)
+        if (entities.length === 0) {
+            throw new Error('Entity not found')
+        }
+        if (entities.length > 1) {
+            throw new Error('Entity ambiguous')
+        }
+
+        return entities[0]
     }
 
-    public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag>): Entity[] {
+    public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag> = []): Entity[] {
         const selectors: string[] = [
             [...Classes].map((Class: Class<Component>) => `.${Component.typeOf(Class)}`).join(''),
             [...tags].map(tag => `.${tag}`).join(''),
@@ -193,36 +209,12 @@ export class World implements IWorld {
         this.root.dispatchEvent(new EntityDeletedEvent(entity))
     }
 
-    public removeComponent<T extends Component>(
-        entity: Entity,
-        component: T | Class<T> | ComponentType,
-    ): void {
-        const stylesheet = this.getStyleSheetFor(component)
-        const componentMap = stylesheet[ECS_PROPERTIES]
-        const current = componentMap.get(entity)
-
-        if (!current) {
-            return
-        }
-
-        const ruleIndex = ([...stylesheet.cssRules] as CSSStyleRule[]).findIndex(
-            rule => rule.selectorText === `._${entity}`,
-        )
-        this.entityElement(entity).classList.remove(Component.typeOf(component))
-        this.root.dispatchEvent(new ComponentRemovedEvent(current, entity))
-        if (ruleIndex !== -1) {
-            stylesheet.deleteRule(ruleIndex)
-        }
-
-        // TODO: Maybe clean up empty stylesheets?
-    }
-
     private getStyleSheetFor<T extends Component>(
         Class: ComponentType | T | Class<T>,
     ): EcsStyleSheet<T> {
         const type = Component.typeOf(Class)
         // The 'style' prefix is obviously overly specific, it's just for documentary purposes
-        const styleSheet = this.document.querySelector<EcsStyleSheetUninitialized>(
+        const styleSheet = this.document.querySelector<EcsStyleSheetUninitialized<T>>(
             `style#${type}[ecs]`,
         )
 
@@ -260,6 +252,23 @@ export class World implements IWorld {
         }
     }
 
+    public removeComponent<T extends Component>(
+        entity: Entity,
+        component: T | Class<T> | ComponentType,
+    ): void {
+        const stylesheet = this.getStyleSheetFor(component)
+        const componentMap = stylesheet[ECS_PROPERTIES]
+        const current = componentMap.get(entity)
+
+        if (!current) {
+            return
+        }
+
+        componentMap.delete(entity)
+        this.entityElement(entity).classList.remove(Component.typeOf(component))
+        this.root.dispatchEvent(new ComponentRemovedEvent(current, entity))
+    }
+
     public setComponent<T extends Component>(entity: Entity, component: T): void {
         const type = Component.typeOf(component)
         const componentMap = this.getStyleSheetFor(component)[ECS_PROPERTIES]
@@ -279,8 +288,15 @@ export class World implements IWorld {
         )
     }
 
+    public findComponent<T extends Component>(entity: Entity, Component: Class<T>): T | null {
+        const componentMap = this.getStyleSheetFor(Component)[ECS_PROPERTIES]
+
+        return componentMap.get(entity) ?? null
+    }
+
     public getComponents(entity: Entity): Component[] {
-        const styleSheets = this.document.querySelectorAll<EcsStyleSheet>('head > style[ecs]')
+        const styleSheets =
+            this.document.querySelectorAll<EcsStyleSheet<Component>>('head > style[ecs]')
 
         return [...styleSheets]
             .map(styleSheet => styleSheet[ECS_PROPERTIES].get(entity))

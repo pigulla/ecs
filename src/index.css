@@ -23,16 +23,3 @@ canvas {
     left: 0;
     top: 0;
 }
-
-canvas.background {
-    z-index: 1;
-    background-color: white;
-}
-
-canvas.foreground {
-    z-index: 2;
-}
-
-canvas.debug {
-    z-index: 3;
-}
