@@ -9,5 +9,5 @@ import { game2 } from './game-2'
 const canvas = new Canvas(document.querySelector('#canvases')!)
 const control = new Control(document)
 
-// game1(canvas, control)
-game2(canvas, control)
+// game1(canvas, control).start()
+game2(canvas, control).start()

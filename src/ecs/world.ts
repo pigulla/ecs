@@ -18,7 +18,7 @@ import type { ISystem } from './system.interface'
 import type { Tag } from './tag'
 import type { IWorld } from './world.interface'
 
-const ECS_PROPERTIES = '--ecs-properties'
+const ECS_PROPERTIES = 'ecs-properties'
 
 type EcsStyleSheetUninitialized<T extends Component> = CSSStyleSheet &
     Element & {
@@ -171,7 +171,7 @@ export class World<Facts = never> implements IWorld<Facts> {
     public createEntity({ name, parent }: { name?: string; parent?: Entity } = {}): Entity {
         // TODO: Check that the name is allowed in a CSS class
 
-        const element = this.document.createElement('div') as ElementWithEntityRef
+        const element = this.document.createElement('comment') as ElementWithEntityRef
         const entity = `📂${(this.nextEntityId++).toString(10)}${name ? `-${name}` : ''}` as Entity
 
         element.id = entity
@@ -211,11 +211,13 @@ export class World<Facts = never> implements IWorld<Facts> {
 
     private getStyleSheetFor<T extends Component>(
         Class: ComponentType | T | Class<T>,
+        tags: Iterable<Tag> = [],
     ): EcsStyleSheet<T> {
         const type = Component.typeOf(Class)
+        const tagSelector = [...tags].join('.')
         // The 'style' prefix is obviously overly specific, it's just for documentary purposes
         const styleSheet = this.document.querySelector<EcsStyleSheetUninitialized<T>>(
-            `style#${type}[ecs]`,
+            `style#${type}${tagSelector === '' ? '' : `.${tagSelector}`}[ecs]`,
         )
 
         if (styleSheet === null) {
@@ -288,8 +290,12 @@ export class World<Facts = never> implements IWorld<Facts> {
         )
     }
 
-    public findComponent<T extends Component>(entity: Entity, Component: Class<T>): T | null {
-        const componentMap = this.getStyleSheetFor(Component)[ECS_PROPERTIES]
+    public findComponent<T extends Component>(
+        entity: Entity,
+        Component: Class<T>,
+        tags: Iterable<Tag> = [],
+    ): T | null {
+        const componentMap = this.getStyleSheetFor(Component, tags)[ECS_PROPERTIES]
 
         return componentMap.get(entity) ?? null
     }
@@ -303,8 +309,12 @@ export class World<Facts = never> implements IWorld<Facts> {
             .filter((maybeComponent): maybeComponent is Component => maybeComponent !== undefined)
     }
 
-    public getComponent<T extends Component>(entity: Entity, Class: Class<T>): T {
-        const maybeComponent = this.getStyleSheetFor(Class)[ECS_PROPERTIES].get(entity)
+    public getComponent<T extends Component>(
+        entity: Entity,
+        Class: Class<T>,
+        tags: Iterable<Tag> = [],
+    ): T {
+        const maybeComponent = this.getStyleSheetFor(Class, tags)[ECS_PROPERTIES].get(entity)
 
         if (!maybeComponent) {
             throw new Error('Component not found')

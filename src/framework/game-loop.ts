@@ -1,8 +1,11 @@
-export function startGameLoop(callback: (time: number, fps: number) => void): void {
+import type { IGameLoop } from './game-loop.interface'
+
+export function createGameLoop(callback: (time: number, fps: number) => void): IGameLoop {
     const SAMPLES = 30 * 3
     const slidingWindowFps = Array.from<number>({ length: SAMPLES }).fill(0)
     const start = performance.now()
 
+    let id: number | null = null
     let frame = 0
     let previous: DOMHighResTimeStamp
 
@@ -20,9 +23,22 @@ export function startGameLoop(callback: (time: number, fps: number) => void): vo
             SAMPLES
 
         callback(time - start, average)
-
-        window.requestAnimationFrame(gameLoop)
+        id = window.requestAnimationFrame(gameLoop)
     }
 
-    window.requestAnimationFrame(gameLoop)
+    return {
+        start(): void {
+            if (id === null) {
+                id = window.requestAnimationFrame(gameLoop)
+                console.log(`requesting animation frame ${id}`)
+            }
+        },
+        stop(): void {
+            if (id !== null) {
+                console.log(`canceling animation frame ${id}`)
+                window.cancelAnimationFrame(id)
+                id = null
+            }
+        },
+    }
 }

@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import type { IWorld } from '../ecs'
-import type { ICanvas, IControl } from '../framework'
-import { startGameLoop } from '../framework'
+import type { ICanvas, IControl, IGameLoop } from '../framework'
+import { createGameLoop } from '../framework'
 import type { Coordinate } from '../framework/geometry'
 
 import { createWallsFromPoints } from './entity'
 import { createAdjacentMovementSystem } from './system/graph'
 import { getDimensions, renderBackground, renderDebug } from './system/render'
 
-export function run(world: IWorld, canvas: ICanvas, control: IControl): void {
+export function run(world: IWorld, canvas: ICanvas, control: IControl): IGameLoop {
     const dimensions = getDimensions(world, { cellSizePx: 50, gridOffsetPx: 50 })
 
     let mouseCoords: Coordinate | null = null
@@ -38,15 +38,15 @@ export function run(world: IWorld, canvas: ICanvas, control: IControl): void {
     world.addSystem(world => renderBackground(world, dimensions, background))
     world.addSystem(world => renderDebug(world, dimensions, debug, averageFps, mouseCoords, 15))
 
-    startGameLoop((time, fps) => {
-        averageFps = fps
-        world.step()
-    })
-
     setTimeout(() => {
         createWallsFromPoints(world, [
             [18, 3],
             [18, 7],
         ])
     }, 3000)
+
+    return createGameLoop((time, fps) => {
+        averageFps = fps
+        world.step()
+    })
 }

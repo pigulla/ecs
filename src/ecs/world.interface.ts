@@ -32,8 +32,12 @@ export interface IWorld<Facts = never> {
     createEntity(data?: { name?: string; parent?: Entity }): Entity
     removeEntity(entity: Entity): void
 
-    findComponent<T extends Component>(entity: Entity, Class: Class<T>): T | null
-    getComponent<T extends Component>(entity: Entity, Class: Class<T>): T
+    findComponent<T extends Component>(
+        entity: Entity,
+        Class: Class<T>,
+        tags?: Iterable<Tag>,
+    ): T | null
+    getComponent<T extends Component>(entity: Entity, Class: Class<T>, tags?: Iterable<Tag>): T
     getComponents(entity: Entity): Component[]
     setComponent<T extends Component>(entity: Entity, component: T): void
     removeComponent<T extends Component>(

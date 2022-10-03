@@ -2,7 +2,7 @@ import type { Graph } from 'ngraph.graph'
 import createGraph from 'ngraph.graph'
 
 import type { ISystem, IWorld, Signal } from '../../../ecs'
-import { signal } from '../../../ecs'
+import { createSignal } from '../../../ecs'
 import type { Coordinate } from '../../../framework/geometry'
 import { COLUMN, ROW } from '../../../framework/geometry'
 import { obstructsMovement, Terrain } from '../../component'
@@ -60,7 +60,7 @@ function update(world: IWorld<Fact>, graph: AdjacentMovementGraph): void {
 }
 
 export function createAdjacentMovementSystem(world: IWorld): ISystem {
-    const RECALCULATE_ADJACENT_MOVEMENT = signal('recalculate-adjacent-movement')
+    const RECALCULATE_ADJACENT_MOVEMENT = createSignal('recalculate-adjacent-movement')
     const graph: AdjacentMovementGraph = createGraph()
     const component = new AdjacentMovement(graph)
 

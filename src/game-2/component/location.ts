@@ -9,4 +9,10 @@ export class Location extends Component {
 
         this.coordinates = [...data.coordinates]
     }
+    public equals(other: Location): boolean {
+        return (
+            this.coordinates[0] === other.coordinates[0] &&
+            this.coordinates[1] === other.coordinates[1]
+        )
+    }
 }
