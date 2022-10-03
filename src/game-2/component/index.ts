@@ -1,4 +1,3 @@
-export * from './change-direction.step-trigger'
 export * from './location'
 export * from './movement'
 export * from './step-trigger'

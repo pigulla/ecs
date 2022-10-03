@@ -28,6 +28,7 @@ export interface IWorld<Facts = never> {
     removeTag(entity: Entity, tag: Tag): void
 
     getEntity(Classes: Iterable<Class<Component>>, tags?: Iterable<Tag>): Entity
+    findEntity(Classes: Iterable<Class<Component>>, tags?: Iterable<Tag>): Entity | null
     findEntities(Classes: Iterable<Class<Component>>, tags?: Iterable<Tag>): Entity[]
     createEntity(data?: { name?: string; parent?: Entity }): Entity
     removeEntity(entity: Entity): void

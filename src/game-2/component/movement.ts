@@ -9,12 +9,10 @@ export enum Direction {
 
 export class Movement extends Component {
     public readonly direction: Direction
-    public readonly bounce: boolean
 
-    public constructor(data: { direction: Direction; bounce: boolean }) {
+    public constructor(data: { direction: Direction }) {
         super()
 
         this.direction = data.direction
-        this.bounce = data.bounce
     }
 }

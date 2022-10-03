@@ -3,11 +3,13 @@ import type { ICanvas, IControl, IGameLoop } from '../framework'
 import { createGameLoop } from '../framework'
 
 import { Direction, Movement } from './component'
+import { Fact } from './fact'
+import { gameOverSignal } from './signal'
 import { foodCollision, wallCollision } from './system/collision'
-import { Fact } from './system/fact'
-import { moveEntities, randomizeMovement } from './system/movement'
+import { moveEntities } from './system/movement'
 import { renderBackground, renderEntities } from './system/render'
-import { playerTag } from './tag'
+import { sound } from './system/sound'
+import { dynamicTag, playerTag } from './tag'
 
 export function run(world: IWorld<Fact>, canvas: ICanvas, control: IControl): IGameLoop {
     const cellSizePx = 15
@@ -51,27 +53,36 @@ export function run(world: IWorld<Fact>, canvas: ICanvas, control: IControl): IG
             background,
         ),
     )
+    world.addSystem(moveEntities)
+    world.addSystem(foodCollision)
+    world.addSystem(wallCollision)
+    world.addSystem(sound)
+    world.addSystem((world, signals) => {
+        if (signals.has(gameOverSignal)) {
+            for (const entity of world.findEntities([], [dynamicTag])) {
+                world.removeEntity(entity)
+            }
+        }
+    })
     world.addSystem((world, _signals) => {
         renderEntities({ cellSizePx }, world, foreground)
     })
-    world.addSystem(moveEntities)
-    world.addSystem(randomizeMovement)
-    world.addSystem(foodCollision)
-    world.addSystem(wallCollision)
 
-    const stepEveryMs = 100
+    const stepEveryMs = 150
     let nextStepAtMs = stepEveryMs
 
     function updatePlayerMovement(): void {
         const newDirection = directionCommand
-        const player = world.getEntity([], [playerTag])
+        const player = world.findEntity([], [playerTag])
 
-        directionCommand = null
+        if (player) {
+            directionCommand = null
 
-        if (newDirection === null) {
-            return
-        } else {
-            world.setComponent(player, new Movement({ direction: newDirection, bounce: false }))
+            if (newDirection === null) {
+                return
+            } else {
+                world.setComponent(player, new Movement({ direction: newDirection }))
+            }
         }
     }
 

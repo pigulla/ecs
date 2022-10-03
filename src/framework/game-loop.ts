@@ -30,12 +30,10 @@ export function createGameLoop(callback: (time: number, fps: number) => void): I
         start(): void {
             if (id === null) {
                 id = window.requestAnimationFrame(gameLoop)
-                console.log(`requesting animation frame ${id}`)
             }
         },
         stop(): void {
             if (id !== null) {
-                console.log(`canceling animation frame ${id}`)
                 window.cancelAnimationFrame(id)
                 id = null
             }

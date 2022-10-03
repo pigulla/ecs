@@ -39,9 +39,9 @@ export class World<Facts = never> implements IWorld<Facts> {
     private readonly entities: ShadowRoot
     private readonly systems: ISystem<Facts>[]
     private readonly facts: Map<unknown, unknown>
+    private readonly signals: Set<Signal>
     private nextEntityId: number
     private _currentStep: number
-    private signals: Set<Signal>
 
     public constructor(document: Document, root: Element, facts: Record<string, unknown>) {
         this.document = document
@@ -68,12 +68,14 @@ export class World<Facts = never> implements IWorld<Facts> {
     }
 
     public step(): void {
+        const signals = new Set(this.signals)
+        this.signals.clear()
+
         for (const system of this.systems) {
-            system(this, this.signals)
+            system(this, new Set(signals))
         }
 
         this._currentStep += 1
-        this.signals = new Set()
     }
 
     public signal(signal: Signal): void {
@@ -140,17 +142,27 @@ export class World<Facts = never> implements IWorld<Facts> {
         })
     }
 
-    public getEntity(Classes: Iterable<Class<Component>>, tags: Iterable<Tag> = []): Entity {
+    public findEntity(
+        Classes: Iterable<Class<Component>>,
+        tags: Iterable<Tag> = [],
+    ): Entity | null {
         const entities = this.findEntities(Classes, tags)
 
-        if (entities.length === 0) {
-            throw new Error('Entity not found')
-        }
         if (entities.length > 1) {
             throw new Error('Entity ambiguous')
         }
 
-        return entities[0]
+        return entities[0] ?? null
+    }
+
+    public getEntity(Classes: Iterable<Class<Component>>, tags: Iterable<Tag> = []): Entity {
+        const maybeEntity = this.findEntity(Classes, tags)
+
+        if (maybeEntity === null) {
+            throw new Error('Entity not found')
+        }
+
+        return maybeEntity
     }
 
     public findEntities(Classes: Iterable<Class<Component>>, tags: Iterable<Tag> = []): Entity[] {
