@@ -9,16 +9,17 @@ interface Options {
 const color = {
     background: 'rgba(255, 255, 255, 1.0)',
     grid: 'rgba(0, 0, 0, 0.5)',
-    outsideBox: 'rgba(0, 0, 0, 1.0)',
-    coordinates: 'rgba(0, 0, 0, 0.25)',
-    outsideCoordinates: 'rgba(0, 0, 0, 0.5)',
-    wall: 'rgba(0, 0, 0, 1.0)',
-    door: 'rgb(255, 127, 0, 1.0)',
-    window: 'rgb(0, 96, 192, 1.0)',
 }
 
-function renderGrid({ cellSizePx, rows, columns }: Options, ctx: CanvasRenderingContext2D): void {
+export function renderGrid(
+    { columns, rows, cellSizePx }: Options,
+    ctx: CanvasRenderingContext2D,
+): void {
     ctx.save()
+    ctx.lineWidth = 1
+    ctx.setLineDash([])
+
+    clear({ width: columns * cellSizePx, height: rows * cellSizePx }, ctx, color.background)
 
     ctx.strokeStyle = color.grid
     ctx.setLineDash([1, 2])
@@ -38,16 +39,4 @@ function renderGrid({ cellSizePx, rows, columns }: Options, ctx: CanvasRendering
     }
 
     ctx.restore()
-}
-
-export function renderBackground(options: Options, ctx: CanvasRenderingContext2D): void {
-    ctx.lineWidth = 1
-    ctx.setLineDash([])
-
-    clear(
-        { width: options.columns * options.cellSizePx, height: options.rows * options.cellSizePx },
-        ctx,
-        color.background,
-    )
-    renderGrid(options, ctx)
 }

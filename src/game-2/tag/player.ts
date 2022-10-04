@@ -1,3 +1,3 @@
 import { createTag } from '../../ecs'
 
-export const playerTag = createTag('player')
+export const PLAYER = createTag('player')

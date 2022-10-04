@@ -2,8 +2,8 @@ import type { IWorld, Signal } from '../../../ecs'
 import { Location } from '../../component'
 import { createFoodEntity } from '../../entity'
 import { Fact } from '../../fact'
-import { foodCollectedSignal } from '../../signal'
-import { foodTag, playerTag } from '../../tag'
+import { FOOD_COLLECTED } from '../../signal'
+import { FOOD, PLAYER } from '../../tag'
 
 export function foodCollision(world: IWorld<Fact>, signals: ReadonlySet<Signal>): void {
     const rows = world.getFact<number>(Fact.ROWS)
@@ -15,11 +15,11 @@ export function foodCollision(world: IWorld<Fact>, signals: ReadonlySet<Signal>)
         })
     }
 
-    if (signals.has(foodCollectedSignal)) {
+    if (signals.has(FOOD_COLLECTED)) {
         createFoodEntity(world, randomLocation())
     }
 
-    const player = world.findEntity([Location], [playerTag])
+    const player = world.findEntity([Location], [PLAYER])
 
     if (player === null) {
         return
@@ -27,9 +27,9 @@ export function foodCollision(world: IWorld<Fact>, signals: ReadonlySet<Signal>)
 
     const location = world.getComponent(player, Location)
 
-    for (const food of world.findEntities([Location], [foodTag])) {
+    for (const food of world.findEntities([Location], [FOOD])) {
         if (world.getComponent(food, Location).equals(location)) {
-            world.signal(foodCollectedSignal)
+            world.signal(FOOD_COLLECTED)
             world.removeEntity(food)
         }
     }

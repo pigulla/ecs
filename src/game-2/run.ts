@@ -2,21 +2,23 @@ import type { IWorld } from '../ecs'
 import type { ICanvas, IControl, IGameLoop } from '../framework'
 import { createGameLoop } from '../framework'
 
-import { Direction, Movement } from './component'
+import { Movement } from './component'
+import { Direction } from './direction'
 import { Fact } from './fact'
-import { gameOverSignal } from './signal'
-import { foodCollision, wallCollision } from './system/collision'
+import { GAME_OVER } from './signal'
+import { fireCollision, foodCollision, wallCollision } from './system/collision'
+import { fireMovement, fireSpawner, fireSpawnTrigger } from './system/fire'
 import { moveEntities } from './system/movement'
-import { renderBackground, renderEntities } from './system/render'
+import { renderGrid, renderEntities, renderFire } from './system/render'
 import { sound } from './system/sound'
-import { dynamicTag, playerTag } from './tag'
+import { DYNAMIC, PLAYER } from './tag'
 
 export function run(world: IWorld<Fact>, canvas: ICanvas, control: IControl): IGameLoop {
     const cellSizePx = 15
     const columns = world.getFact<number>(Fact.COLUMNS)
     const rows = world.getFact<number>(Fact.ROWS)
 
-    let directionCommand: Direction | null = Direction.UP
+    let directionCommand: Direction | null = null // Direction.UP
 
     canvas.resize({ width: columns * cellSizePx, height: rows * cellSizePx })
     control.onKeyDown(event => {
@@ -40,29 +42,37 @@ export function run(world: IWorld<Fact>, canvas: ICanvas, control: IControl): IG
         }
     })
 
-    const background = canvas.create({ classes: ['background'], styles: {} })
+    const grid = canvas.create({ classes: ['grid'], styles: {} })
+    const background = canvas.create({ classes: ['foreground'], styles: {} })
     const foreground = canvas.create({ classes: ['foreground'], styles: {} })
 
     world.addSystem((_world, _signals) =>
-        renderBackground(
+        renderGrid(
             {
                 cellSizePx,
                 rows,
                 columns,
             },
-            background,
+            grid,
         ),
     )
     world.addSystem(moveEntities)
     world.addSystem(foodCollision)
     world.addSystem(wallCollision)
+    world.addSystem(fireCollision)
+    world.addSystem(fireMovement)
+    world.addSystem(fireSpawner)
+    world.addSystem(fireSpawnTrigger)
     world.addSystem(sound)
     world.addSystem((world, signals) => {
-        if (signals.has(gameOverSignal)) {
-            for (const entity of world.findEntities([], [dynamicTag])) {
+        if (signals.has(GAME_OVER)) {
+            for (const entity of world.findEntities([], [DYNAMIC])) {
                 world.removeEntity(entity)
             }
         }
+    })
+    world.addSystem((world, _signals) => {
+        renderFire({ cellSizePx }, world, background)
     })
     world.addSystem((world, _signals) => {
         renderEntities({ cellSizePx }, world, foreground)
@@ -73,7 +83,7 @@ export function run(world: IWorld<Fact>, canvas: ICanvas, control: IControl): IG
 
     function updatePlayerMovement(): void {
         const newDirection = directionCommand
-        const player = world.findEntity([], [playerTag])
+        const player = world.findEntity([], [PLAYER])
 
         if (player) {
             directionCommand = null

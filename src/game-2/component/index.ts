@@ -1,3 +1,4 @@
+export * from './fire'
 export * from './location'
 export * from './movement'
 export * from './step-trigger'

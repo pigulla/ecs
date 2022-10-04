@@ -1,11 +1,11 @@
 import { Component } from '../../ecs'
 
 export interface VisualOptions {
-    color: [number, number, number]
+    color: [number, number, number, number]
 }
 
 export class Visual extends Component {
-    public readonly color: [number, number, number]
+    public readonly color: readonly [number, number, number, number]
 
     public constructor(data: VisualOptions) {
         super()

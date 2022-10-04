@@ -1,3 +1,3 @@
 import { createSignal } from '../../ecs'
 
-export const foodCollectedSignal = createSignal('food-collected')
+export const FOOD_COLLECTED = createSignal('food-collected')

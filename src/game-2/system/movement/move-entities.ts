@@ -1,5 +1,6 @@
 import type { IWorld } from '../../../ecs'
-import { Direction, Location, Movement } from '../../component'
+import { Location, Movement } from '../../component'
+import { Direction } from '../../direction'
 import type { Fact } from '../../fact'
 
 export function moveEntities(world: IWorld<Fact>): void {
